@@ -6,6 +6,8 @@ Game::Game(QWidget *parent = nullptr, PieceColor _PlayerColor = PieceColor::Whit
     scene(new QGraphicsScene(this)), view(new GameView(this)), PlayerColor(_PlayerColor)
 {}
 
+GameState Game::gamestate = GameState::Default;
+
 void Game::start()
 {
     // Adding the view as the central widget
@@ -20,7 +22,7 @@ void Game::start()
     view->viewport()->setMouseTracking(true);
 
     //Creating and Initializing the chessboard and setting it's scene
-    chessboard = new ChessBoard(nullptr, scene, PlayerColor);
+    chessboard = new ChessBoard(scene, PlayerColor);
     chessboard->InitializeBoard();
     view->setScene(scene);
 }

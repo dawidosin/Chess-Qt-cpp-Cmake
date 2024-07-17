@@ -1,8 +1,6 @@
 #include "../headers/rook.h"
 #include "../headers/globals.h"
-#include "../headers/game.h"
-
-extern Game* game;
+#include "../headers/chessboard.h"
 
 Rook::Rook(PieceColor _piececolor=PieceColor::Black):
     ChessPiece(_piececolor)

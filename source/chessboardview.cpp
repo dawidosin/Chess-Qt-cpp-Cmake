@@ -4,7 +4,7 @@
 #include "../headers/globals.h"
 #include "../headers/chessboard.h"
 
-ChessBoardView::ChessBoardView(ChessBoard* _chessboard): chessboard(_chessboard)
+ChessBoardView::ChessBoardView(ChessBoard* _chessboard): chessboard(_chessboard), pawnpromotion(_chessboard)
 {}
 
 // Shows possible moves for ActivePiece
@@ -16,7 +16,7 @@ void ChessBoardView::ShowPossibleMoves()
         HidePossibleMoves();
 
         chessboard->PossibleMoves = chessboard->ActivePiece->getValidMoves(*chessboard);
-        chessboard->ActivePiece->ValidateIsKingCheckAfterMoves(*chessboard, chessboard->PossibleMoves);
+        chessboard->ValidateIsKingCheckAfterMoves(chessboard->PossibleMoves);
 
         for (const auto& possmove : chessboard->PossibleMoves)
         {
@@ -35,7 +35,7 @@ void ChessBoardView::ShowPossibleMoves()
             }
 
             img->setPos(possmove.x * BoxSize, possmove.y * BoxSize);
-            PossibleMovesImg.push_back(img);
+            PossibleMovesItems.push_back(img);
             chessboard->scene->addItem(img);
         }
     }
@@ -44,12 +44,12 @@ void ChessBoardView::ShowPossibleMoves()
 // Hides possible moves for ActivePiece
 void ChessBoardView::HidePossibleMoves()
 {
-    for (auto img : PossibleMovesImg)
+    for (auto img : PossibleMovesItems)
     {
         chessboard->scene->removeItem(img);
         delete img;
     }
-    PossibleMovesImg.clear();
+    PossibleMovesItems.clear();
     chessboard->PossibleMoves.clear();
 }
 
@@ -83,6 +83,18 @@ void ChessBoardView::HideKingCheck()
         pixmap = pixmap.scaled(QSize(BoxSize, BoxSize), Qt::KeepAspectRatio);
         chessboard->BlackKing->setPixmap(pixmap);
     }
+}
+
+void ChessBoardView::ShowPawnPromotion(ChessPiece* piece)
+{
+    pawnpromotion.pawn = piece;
+    pawnpromotion.show();
+}
+
+void ChessBoardView::HidePawnPromotion()
+{
+    pawnpromotion.pawn = nullptr;
+    pawnpromotion.hide();
 }
 
 void ChessBoardView::MoveActivePieceToMouse(QPoint point)

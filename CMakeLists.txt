@@ -51,6 +51,8 @@ add_executable(ChessAi
   source/movelist.cpp
   headers/chessboardview.h
   source/chessboardview.cpp
+  headers/pawnpromotion.h
+  source/pawnpromotion.cpp
 
 
 

@@ -13,6 +13,9 @@
 #include "boardposition.h"
 #include "movelist.h"
 #include "chessboardview.h"
+#include "game.h"
+
+class Game;
 
 /*
     Contains the chessboard and all pieces objects.
@@ -24,25 +27,23 @@ public:
     QGraphicsScene *scene;
     ChessBoardView boardview;
 
-    ChessBoard(QWidget *parent, QGraphicsScene *_scene, PieceColor _PlayerColor);
+    ChessBoard(QGraphicsScene *_scene, PieceColor _PlayerColor);
     ChessBoard(); // default
     void InitializeBoard();
     void DragPiece(ChessPiece* piece);
     void DropPiece();
-    void RemoveChessPiece(ChessPiece *PieceToRemove);
-    void setPieceInBoardPos(ChessPiece* Piece, BoardPosition BoardPos);
-    ChessPiece* getActivePiece();
-    ChessBox* getBoxAtBoardPosition(BoardPosition pos);
-    ChessBox* getBoxAtMousePosition(QPoint point);
     ChessPiece* getPieceAtMousePosition(QPointF point);
-    ChessPiece* getPieceAtBoardPosition(BoardPosition pos);
+    void ChoosePawnPromotion(QPointF point);
+    ChessPiece* getActivePiece() const;
     bool isPieceActive() const;
     virtual bool isKingInCheck() const;
+    bool isChessBoxAttacked(const BoardPosition boardposition) const;
     ChessPiece* getKing(PieceColor color) const;
     ChessBox* findChessBox(BoardPosition pos) const;
+    ChessPiece* findPiece(BoardPosition pos) const;
     PieceColor getBottomPiecesColor() const;
     PieceColor getCurrentPlayerColor() const;
-    long long int getTurn() const;
+    unsigned long long int getTurn() const;
 
     ~ChessBoard();
 private:
@@ -54,17 +55,20 @@ private:
     PieceColor PlayerColor = PieceColor::White;
     ChessPiece* WhiteKing;
     ChessPiece* BlackKing;
-    long long int turn = 1;
-    mutable bool isCheck = false;
+    unsigned long long int turn = 1;
     MoveList moves;
 
-
+    void setPieceInBoardPos(ChessPiece* Piece, BoardPosition BoardPos);
+    void RemoveChessPiece(ChessPiece *PieceToRemove);
+    ChessBox* getBoxAtBoardPosition(BoardPosition pos);
+    ChessPiece* getPieceAtBoardPosition(BoardPosition pos);
     bool isValidMove(BoardPosition move);
+    void HandleKingCastling();
+    void ValidateIsKingCheckAfterMoves(std::vector<BoardPosition>& PossibleMoves);
 
-    friend class ChessPiece;
     friend class ChessBoardCopy;
-    friend struct MoveList;
     friend struct ChessBoardView;
+    friend struct MoveList;
 };
 
 #endif // CHESSBOARD_H

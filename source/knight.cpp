@@ -1,13 +1,12 @@
 #include "../headers/knight.h"
 #include "../headers/globals.h"
-#include "../headers/game.h"
-
-extern Game* game;
+#include "../headers/chessboard.h"
 
 Knight::Knight(PieceColor _piececolor=PieceColor::Black):
     ChessPiece(_piececolor)
 {
     setImage();
+    piecetype = PieceType::Knight;
 }
 
 // Custom copy constructor

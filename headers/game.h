@@ -11,9 +11,16 @@
 #include "chessbox.h"
 #include "chessboard.h"
 #include "gameview.h"
-/*
-    Links all the components in the game.
-*/
+
+enum GameState
+{
+    Default,
+    PawnPromotion,
+    Check,
+    Checkmate
+};
+
+// Links all the components in the game.
 class Game : public QMainWindow
 {
     Q_OBJECT
@@ -21,10 +28,11 @@ class Game : public QMainWindow
 public:
     explicit Game(QWidget *parent, PieceColor _PlayerColor);
     void start();
-    GameView *view;
-    ~Game() {}
+
+    static GameState gamestate;
 private:
     ChessBoard *chessboard;
+    GameView *view;
     QGraphicsScene *scene;
     PieceColor PlayerColor;
 

@@ -2,6 +2,7 @@
 #define CHESSBOARDVIEW_H
 #include <QGraphicsPixmapItem>
 #include <vector>
+#include "pawnpromotion.h"
 
 class ChessBoard;
 
@@ -12,8 +13,11 @@ struct ChessBoardView
     void HidePossibleMoves();
     void ShowKingCheck();
     void HideKingCheck();
+    void ShowPawnPromotion(ChessPiece* piece);
+    void HidePawnPromotion();
     void MoveActivePieceToMouse(QPoint point);
-    std::vector<QGraphicsPixmapItem*> PossibleMovesImg;
+    std::vector<QGraphicsPixmapItem*> PossibleMovesItems;
+    PawnPromotion pawnpromotion;
 private:
     ChessBoard* chessboard;
 };

@@ -11,20 +11,24 @@ GameView::GameView(QWidget *parent)
 
 void GameView::mousePressEvent(QMouseEvent *event)
 {
-    // if we had active pawn already && clicked on chessbox
-    if(game->chessboard->isPieceActive() && game->chessboard->getBoxAtMousePosition(event->pos()))
-    {
-
-    }
-    // if we clicked on piece
-    else
-    {
-        ChessPiece* ClickedPiece = game->chessboard->getPieceAtMousePosition(event->pos());
-        if(ClickedPiece != nullptr)
+        switch(game->gamestate)
         {
-            game->chessboard->DragPiece(ClickedPiece);
+            case GameState::Default: // if we clicked on piece
+            case GameState::Check:
+            {
+                ChessPiece* ClickedPiece = game->chessboard->getPieceAtMousePosition(event->pos());
+                if(ClickedPiece != nullptr)
+                {
+                    game->chessboard->DragPiece(ClickedPiece);
+                }
+            } break;
+            case GameState::PawnPromotion:
+            {
+                game->chessboard->ChoosePawnPromotion(event->pos());
+            } break;
+
         }
-    }
+
     QGraphicsView::mousePressEvent(event);
 }
 
@@ -33,7 +37,7 @@ void GameView::mouseReleaseEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton)
     {
         if(game->chessboard->isPieceActive())
-        {           
+        {
             game->chessboard->DropPiece();
         }
     }

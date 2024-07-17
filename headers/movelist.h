@@ -8,19 +8,28 @@
 
 class ChessBoard;
 
-struct Move {
-    Move(BoardPosition _startpos, BoardPosition _endpos, PieceType _CapturedPiece, bool _isCaptPieceFirstMove);
+struct Move
+{
+public:
+    Move(BoardPosition _startpos, BoardPosition _endpos, bool _isPawnPromotion, bool _isPieceCaptured,
+         PieceType _CapturedPieceType, bool _isCaptPieceFirstMove, bool _isKingCastling);
+    bool isPawnPromotion;
+    bool isPieceCaptured;
+    bool isKingCastling;
     BoardPosition startpos;
     BoardPosition endpos;
-    PieceType CapturedPiece; // Holds PieceType::None if no capture
+private:  
+    PieceType CapturedPieceType; // Holds PieceType::None if no capture
     bool isCaptPieceFirstMove;
+
+    friend class MoveList;
 };
 
 // it's an queue for holding all moves in chess algebric notation
 struct MoveList: public std::stack<Move>
 {
     MoveList(ChessBoard* _chessboard);
-    void AddMove(const ChessBox* destinationBox);
+    void AddMove(const ChessBox& destinationBox, const ChessPiece& Piece);
     void UndoMove();
     void UndoTurn();
     ChessBoard* chessboard;

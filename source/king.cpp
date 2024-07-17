@@ -1,8 +1,6 @@
 #include "../headers/king.h"
 #include "../headers/globals.h"
-#include "../headers/game.h"
-
-extern Game* game;
+#include "../headers/chessboard.h"
 
 King::King(PieceColor _piececolor=PieceColor::Black):
     ChessPiece(_piececolor)
@@ -24,6 +22,7 @@ ChessPiece* King::clone() const
 {
     return new King(*this);
 }
+
 void King::setImage()
 {
     if(piececolor == PieceColor::Black)
@@ -66,6 +65,93 @@ std::vector<BoardPosition> King::getValidMoves(const ChessBoard& chessboard) con
                  (BoxesToCheck[i]->getPiece()->getColor() == this->getColor()))
             BoxesToCheck.erase(BoxesToCheck.begin() + i);
     }
+
+    // checks wheter any chesspiece is blocking our King to castle
+    auto isAnyPieceInTheRookToKingWay = [&chessboard](const ChessPiece& Rook, const ChessPiece& King) -> bool
+    {
+        int difference = 0;
+
+        if(King.boardpos.x - Rook.boardpos.x > 0) // Rook is on the left
+            difference = -1;
+        else // Rook is on the right
+            difference = 1;
+
+        while(true)
+        {
+            difference += difference;
+
+            const ChessBox* chessbox = chessboard.findChessBox(BoardPosition(King.boardpos.x + difference, King.boardpos.y));
+            if(chessbox == nullptr)
+                return false;
+            const ChessPiece* currentPiece = chessbox->getPiece();
+
+            if(currentPiece != nullptr)
+            {
+                if(*currentPiece == Rook)
+                    return false;
+                else
+                    return true;
+            }
+        }
+    };
+
+    // Checks are any Piece attacking boxes between Rook and King
+    auto isAnyPieceAttackingCastlingBoxes = [&chessboard](const ChessPiece& Rook, const ChessPiece& King) -> bool
+    {
+        int difference = 0;
+
+        if(King.boardpos.x - Rook.boardpos.x > 0) // Rook is on the left
+            difference = -1;
+        else // Rook is on the right
+            difference = 1;
+
+        while(true)
+        {
+            difference += difference;
+
+            const ChessBox* chessbox = chessboard.findChessBox(BoardPosition(King.boardpos.x + difference, King.boardpos.y));
+            if(chessbox == nullptr)
+                return false;
+            const ChessPiece* currentPiece = chessbox->getPiece();
+
+            if(currentPiece != nullptr && *currentPiece == Rook)
+                return false;
+
+            if(chessboard.isChessBoxAttacked(chessbox->getBoardPositon()) == true)
+                return true;
+        }
+    };
+
+    /* Checking for possible castling.
+        1. Neither the king nor the rook has previously moved.
+        2. There are no pieces between the king and the rook.
+        3. The king is not currently in check.
+        4. The king does not pass through or finish on a square that is attacked by an enemy piece
+    */
+
+    if(this->isFirstMove == true)
+    {
+        const ChessPiece* LeftRook = chessboard.findPiece(BoardPosition(0, this->boardpos.y));
+        const ChessPiece* RightRook = chessboard.findPiece(BoardPosition(7, this->boardpos.y));
+
+            // left castling requirement
+        if(LeftRook != nullptr && LeftRook->getType() == PieceType::Rook &&
+            LeftRook->isFirstMove == true && isAnyPieceInTheRookToKingWay(*LeftRook, *this) == false &&
+            Game::gamestate != GameState::Check && isAnyPieceAttackingCastlingBoxes(*LeftRook, *this) == false)
+        {
+            ValidMoves.push_back(BoardPosition(this->boardpos.x - 2, this->boardpos.y));
+        }
+
+        // right castling requirement
+        if(RightRook != nullptr && RightRook->getType() == PieceType::Rook &&
+            RightRook->isFirstMove == true && isAnyPieceInTheRookToKingWay(*RightRook, *this) == false &&
+            Game::gamestate != GameState::Check && isAnyPieceAttackingCastlingBoxes(*RightRook, *this) == false)
+        {
+            ValidMoves.push_back(BoardPosition(this->boardpos.x + 2, this->boardpos.y));
+        }
+    }
+
+
     // adding Valid moves
     for(auto a: BoxesToCheck)
         ValidMoves.push_back(a->getBoardPositon());

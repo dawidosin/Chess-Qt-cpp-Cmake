@@ -62,7 +62,7 @@ bool ChessBoardCopy::isKingInCheck() const
             {
                 if(Move == BlackKing->boardpos)
                 {
-                    isCheck = true;
+                    Game::gamestate = GameState::Check;
                     return true;
                 }
             }
@@ -77,7 +77,7 @@ bool ChessBoardCopy::isKingInCheck() const
             {
                 if(Move == WhiteKing->boardpos)
                 {
-                    isCheck = true;
+                    Game::gamestate = GameState::Check;
                     return true;
                 }
             }

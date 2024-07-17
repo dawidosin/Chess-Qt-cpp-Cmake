@@ -1,8 +1,6 @@
 #include "../headers/queen.h"
 #include "../headers/globals.h"
-#include "../headers/game.h"
-
-extern Game* game;
+#include "../headers/chessboard.h"
 
 Queen::Queen(PieceColor _piececolor=PieceColor::Black):
     ChessPiece(_piececolor)

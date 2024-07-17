@@ -1,8 +1,6 @@
 #include "../headers/pawn.h"
 #include "../headers/globals.h"
-#include "../headers/game.h"
-
-extern Game* game;
+#include "../headers/chessboard.h"
 
 Pawn::Pawn(PieceColor _piececolor=PieceColor::Black):
     ChessPiece(_piececolor)
@@ -57,23 +55,25 @@ std::vector<BoardPosition> Pawn::getValidMoves(const ChessBoard& chessboard) con
         {
             // one move forward
             ChessBox* possmove1 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y - 1));
-            if(possmove1 != nullptr)
+
+            if(possmove1 != nullptr && possmove1->getPiece() == nullptr)
             {
-                if(possmove1->getPiece() == nullptr)
-                    ValidMoves.push_back(possmove1->getBoardPositon());
-            }
-            // two moves forward
-            if(isFirstMove)
-            {
-                ChessBox* possmove2 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y - 2));
-                if(possmove2 != nullptr)
+                ValidMoves.push_back(possmove1->getBoardPositon());
+
+                // two moves forward
+                if(isFirstMove)
                 {
-                    if(possmove2->getPiece() != nullptr)
-                        return ValidMoves;
-                    else
-                        ValidMoves.push_back(possmove2->getBoardPositon());
+                    ChessBox* possmove2 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y - 2));
+                    if(possmove2 != nullptr)
+                    {
+                        if(possmove2->getPiece() != nullptr)
+                            return ValidMoves;
+                        else
+                            ValidMoves.push_back(possmove2->getBoardPositon());
+                    }
                 }
             }
+
             // diagonal capturing piece
             ChessBox* posstake1 = chessboard.findChessBox(BoardPosition(boardpos.x - 1, boardpos.y - 1));
             ChessBox* posstake2 = chessboard.findChessBox(BoardPosition(boardpos.x + 1, boardpos.y - 1));
@@ -95,22 +95,23 @@ std::vector<BoardPosition> Pawn::getValidMoves(const ChessBoard& chessboard) con
         {
             // one move forward
             ChessBox* possmove1 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y + 1));
-            if(possmove1 != nullptr)
+
+            if(possmove1 != nullptr && possmove1->getPiece() == nullptr)
             {
-                if(possmove1->getPiece() == nullptr)
-                    ValidMoves.push_back(possmove1->getBoardPositon());
-            }
-            // two moves forward
-            if(isFirstMove)
-            {
-                ChessBox* possmove2 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y + 2));
-                if(possmove2 != nullptr)
+                ValidMoves.push_back(possmove1->getBoardPositon());
+
+                // two moves forward
+                if(isFirstMove)
                 {
-                    if(possmove2->getPiece() != nullptr)
-                        return ValidMoves;
-                    else
-                        ValidMoves.push_back(possmove2->getBoardPositon());
-                }          
+                    ChessBox* possmove2 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y + 2));
+                    if(possmove2 != nullptr)
+                    {
+                        if(possmove2->getPiece() != nullptr)
+                            return ValidMoves;
+                        else
+                            ValidMoves.push_back(possmove2->getBoardPositon());
+                    }
+                }
             }
 
             // diagonal capturing piece
