@@ -4,7 +4,7 @@
 // holds cordinates to 8x8 chessboard in range [0-7]
 struct BoardPosition
 {
-    int x,y;
+    unsigned int x,y;
 
     BoardPosition(int _x, int _y)
     {

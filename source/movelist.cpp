@@ -139,15 +139,15 @@ void MoveList::UndoMove()
 
             if(isRightCastling)
             {
-                RookChessPiece = chessboard->getPieceAtBoardPosition(BoardPosition(currentPiece->boardpos.x - 1, currentPiece->boardpos.y));
-                chessboard->setPieceInBoardPos(KingChessPiece, BoardPosition(KingChessPiece->boardpos.x - 2, KingChessPiece->boardpos.y));
-                chessboard->setPieceInBoardPos(RookChessPiece, BoardPosition(RookChessPiece->boardpos.x + 2, RookChessPiece->boardpos.y));
+                RookChessPiece = chessboard->getPieceAtBoardPosition(BoardPosition(7, currentPiece->boardpos.y));
+                chessboard->setPieceInBoardPos(KingChessPiece, BoardPosition(KingChessPiece->boardpos.x + 2, KingChessPiece->boardpos.y));
+                chessboard->setPieceInBoardPos(RookChessPiece, BoardPosition(RookChessPiece->boardpos.x - 2, RookChessPiece->boardpos.y));
             }
             else
             {
-                RookChessPiece = chessboard->getPieceAtBoardPosition(BoardPosition(currentPiece->boardpos.x + 1, currentPiece->boardpos.y));
-                chessboard->setPieceInBoardPos(KingChessPiece, BoardPosition(KingChessPiece->boardpos.x + 2, KingChessPiece->boardpos.y));
-                chessboard->setPieceInBoardPos(RookChessPiece, BoardPosition(RookChessPiece->boardpos.x - 3, RookChessPiece->boardpos.y));
+                RookChessPiece = chessboard->getPieceAtBoardPosition(BoardPosition(0, currentPiece->boardpos.y));
+                chessboard->setPieceInBoardPos(KingChessPiece, BoardPosition(KingChessPiece->boardpos.x - 2, KingChessPiece->boardpos.y));
+                chessboard->setPieceInBoardPos(RookChessPiece, BoardPosition(RookChessPiece->boardpos.x + 3, RookChessPiece->boardpos.y));
             }
         }
 

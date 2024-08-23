@@ -7,6 +7,7 @@
 #include "../headers/king.h"
 #include "../headers/globals.h"
 #include "../headers/chessboardcopy.h"
+#include "../headers/gameenddialog.h"
 
 #include <cmath>
 
@@ -90,19 +91,31 @@ ChessBoard::ChessBoard() :
 
 ChessBoard::~ChessBoard()
 {
-    for (auto piece : WhitePiece)
-    delete piece;
-
-    for (auto piece : BlackPiece)
-    delete piece;
-
+    // removing from scene
     for(int y = 0; y < 8; y++)
     {
         for(int x = 0; x < 8; x++)
         {
-            delete chessbox[y][x];
+            this->scene->removeItem(chessbox[y][x]);
         }
     }
+    for(auto const& a: WhitePiece)
+    this->scene->removeItem(a);
+    for(auto const& a: BlackPiece)
+    this->scene->removeItem(a);
+
+    // deleting objects
+    for(int y = 0; y < 8; y++)
+    {
+        for(int x = 0; x < 8; x++)
+        {
+                delete chessbox[y][x];
+        }
+    }
+    for (auto piece : WhitePiece)
+    delete piece;
+    for (auto piece : BlackPiece)
+    delete piece;
 }
 // adding all Items to the scene
 void ChessBoard::InitializeBoard()
@@ -236,7 +249,7 @@ void ChessBoard::DragPiece(ChessPiece* piece)
     }
 }
 
-// Checks the validity of the move, and recognize is it capture or move
+// Checks the validity of the move, recognize the type of move
 // and drops chesspiece in correct place
 void ChessBoard::DropPiece()
 {
@@ -267,12 +280,30 @@ void ChessBoard::DropPiece()
 
        /* King check handling */
        if(isKingInCheck() == true)
-            boardview.ShowKingCheck();
+       {
+            // if check-mate
+            if(PlayerHaveMove() == false)
+            {
+                Game::gamestate = GameState::Checkmate;
+            }
+            // if check
+            else
+            {
+                Game::gamestate = GameState::Check;
+                boardview.ShowKingCheck();
+            }
+       }
        // no longer king check
        else if (Game::gamestate == GameState::Check)
        {
             Game::gamestate = GameState::Default;
             boardview.HideKingCheck();
+       }
+
+       /* Checking for Draw */
+       if(PlayerHaveMove() == false)
+       {
+           Game::gamestate = GameState::Draw;
        }
 
        /* Promoting pawn handling */
@@ -294,12 +325,13 @@ void ChessBoard::DropPiece()
     {
        ActivePiece->setPos(ActivePiece->boardpos.x * BoxSize, ActivePiece->boardpos.y * BoxSize);      
     }
+
     boardview.HidePossibleMoves();
     ActivePiece->setZValue(0);
     ActivePiece = nullptr;
 }
 
-bool ChessBoard::isValidMove(BoardPosition move)
+bool ChessBoard::isValidMove(BoardPosition move) const
 {
     for(auto const& possmove: PossibleMoves)
     {
@@ -309,34 +341,66 @@ bool ChessBoard::isValidMove(BoardPosition move)
     return false;
 }
 
+// returns true wheter the current player have any valid move
+bool ChessBoard::PlayerHaveMove()
+{
+    if(getCurrentPlayerColor() == PieceColor::White)
+    {
+       for(auto const& piece: WhitePiece)
+       {
+            std::vector<BoardPosition> PossibleMovesForPiece = piece->getValidMoves(*this);
+            ValidateIsKingCheckAfterMoves(PossibleMovesForPiece, piece);
+            if(PossibleMovesForPiece.size() > 0)
+                return true;
+       }
+    }
+    else
+    {
+       for(auto const& piece: BlackPiece)
+       {
+            std::vector<BoardPosition> PossibleMovesForPiece = piece->getValidMoves(*this);
+            ValidateIsKingCheckAfterMoves(PossibleMovesForPiece, piece);
+            if(PossibleMovesForPiece.size() > 0)
+                return true;
+       }
+    }
+    return false;
+}
+
 /* Removing moves which would cause our team king in check.
  We are copying The actual chessboard and we are testing on,
  it is our King in danger by moving piece to actual new chessbox.
  So we can know if after move, our king is in danger.
- If yes then we are removing this movse. */
-void ChessBoard::ValidateIsKingCheckAfterMoves(std::vector<BoardPosition>& PossibleMoves)
+ If yes then we are removing this move. */
+void ChessBoard::ValidateIsKingCheckAfterMoves(std::vector<BoardPosition>& PossibleMovesCheck, ChessPiece* PieceToCheck)
 {
-    if(PossibleMoves.empty())
+    if(PossibleMovesCheck.empty())
        return;
 
     ChessBoardCopy chessboard_cpy(*this);
 
-    for (auto Move = PossibleMoves.begin(); Move != PossibleMoves.end();)
+    if(PieceToCheck == this->ActivePiece)
+       PieceToCheck = chessboard_cpy.ActivePiece;
+    else
+    {
+       PieceToCheck = chessboard_cpy.findPiece(PieceToCheck->boardpos);
+    }
+
+    for (auto Move = PossibleMovesCheck.begin(); Move != PossibleMovesCheck.end();)
     {
        /* moving piece in order to check for potential danger after move for our king */
        // adding move to  std::queue<moves>
        ChessBox* NewChessBox = chessboard_cpy.getBoxAtBoardPosition(*Move);
-       chessboard_cpy.moves.AddMove(*chessboard_cpy.getBoxAtBoardPosition(*Move), *chessboard_cpy.ActivePiece);
+       chessboard_cpy.moves.AddMove(*NewChessBox, *PieceToCheck);
 
        // its an capture move
        if(NewChessBox->getPiece() != nullptr)
             chessboard_cpy.RemoveChessPiece(NewChessBox->getPiece());
-
        // its an normal move
-       chessboard_cpy.setPieceInBoardPos(chessboard_cpy.ActivePiece, *Move);
+       chessboard_cpy.setPieceInBoardPos(PieceToCheck, *Move);
 
        if(chessboard_cpy.isKingInCheck() == true)
-            Move = PossibleMoves.erase(Move);
+            Move = PossibleMovesCheck.erase(Move);
        else
             ++Move;
 
@@ -351,7 +415,7 @@ bool ChessBoard::isChessBoxAttacked(const BoardPosition boardposition) const
     {
        for(auto const& Piece: WhitePiece)
        {
-            std::vector<BoardPosition> possiblePieceMoves = Piece->getValidMoves(*this);
+            std::vector<BoardPosition> possiblePieceMoves = Piece->getValidCaptureMoves(*this);
             for(auto const Move: possiblePieceMoves)
             {
                 if(Move == boardposition)
@@ -363,7 +427,7 @@ bool ChessBoard::isChessBoxAttacked(const BoardPosition boardposition) const
     {
        for(auto const& Piece: BlackPiece)
        {
-            std::vector<BoardPosition> possiblePieceMoves = Piece->getValidMoves(*this);
+            std::vector<BoardPosition> possiblePieceMoves = Piece->getValidCaptureMoves(*this);
             for(auto const Move: possiblePieceMoves)
             {
                 if(Move == boardposition)
@@ -380,19 +444,13 @@ bool ChessBoard::isKingInCheck() const
 {
     if(getCurrentPlayerColor() == PieceColor::Black)
     {
-       if(isChessBoxAttacked(BlackKing->boardpos) == true)
-       {
-            Game::gamestate = GameState::Check;
+       if(isChessBoxAttacked(BlackKing->boardpos) == true)       
             return true;
-       }
     }
     else
     {
        if(isChessBoxAttacked(WhiteKing->boardpos) == true)
-        {
-            Game::gamestate = GameState::Check;
             return true;
-        }
     }
     return false;
 }

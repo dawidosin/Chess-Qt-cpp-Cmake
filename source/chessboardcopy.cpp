@@ -57,12 +57,11 @@ bool ChessBoardCopy::isKingInCheck() const
     {
         for(auto const& Piece: WhitePiece)
         {
-            std::vector<BoardPosition> possiblePieceMoves = Piece->getValidMoves(*this);
+            std::vector<BoardPosition> possiblePieceMoves = Piece->getValidCaptureMoves(*this);
             for(auto const Move: possiblePieceMoves)
             {
                 if(Move == BlackKing->boardpos)
                 {
-                    Game::gamestate = GameState::Check;
                     return true;
                 }
             }
@@ -72,12 +71,11 @@ bool ChessBoardCopy::isKingInCheck() const
     {
         for(auto const& Piece: BlackPiece)
         {
-            std::vector<BoardPosition> possiblePieceMoves = Piece->getValidMoves(*this);
+            std::vector<BoardPosition> possiblePieceMoves = Piece->getValidCaptureMoves(*this);
             for(auto const Move: possiblePieceMoves)
             {
                 if(Move == WhiteKing->boardpos)
                 {
-                    Game::gamestate = GameState::Check;
                     return true;
                 }
             }

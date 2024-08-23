@@ -15,6 +15,7 @@ Knight::Knight(const Knight& other)
 {
     this->boardpos = other.boardpos;
     this->piecetype = other.piecetype;
+    this->isFirstMove = other.isFirstMove;
     setImage();
 }
 
@@ -71,4 +72,5 @@ std::vector<BoardPosition> Knight::getValidMoves(const ChessBoard& chessboard) c
 
     return ValidMoves;
 }
+
 

@@ -53,6 +53,8 @@ add_executable(ChessAi
   source/chessboardview.cpp
   headers/pawnpromotion.h
   source/pawnpromotion.cpp
+  headers/gameenddialog.h
+  source/gameenddialog.cpp
 
 
 

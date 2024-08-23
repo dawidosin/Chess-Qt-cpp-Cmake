@@ -11,6 +11,8 @@ GameView::GameView(QWidget *parent)
 
 void GameView::mousePressEvent(QMouseEvent *event)
 {
+    if (event->button() == Qt::LeftButton)
+    {
         switch(game->gamestate)
         {
             case GameState::Default: // if we clicked on piece
@@ -26,10 +28,11 @@ void GameView::mousePressEvent(QMouseEvent *event)
             {
                 game->chessboard->ChoosePawnPromotion(event->pos());
             } break;
-
         }
+    }
 
     QGraphicsView::mousePressEvent(event);
+    mouseMoveEvent(event);
 }
 
 void GameView::mouseReleaseEvent(QMouseEvent *event)
@@ -40,6 +43,25 @@ void GameView::mouseReleaseEvent(QMouseEvent *event)
         {
             game->chessboard->DropPiece();
         }
+    }
+    switch(game->gamestate)
+    {
+        case GameState::Checkmate:
+        {
+            this->gameEndDialog = new GameEndDialog();
+            this->gameEndDialog->win(game->chessboard->getCurrentPlayerColor());
+            connect(gameEndDialog->getRestartButton(), &QPushButton::clicked, game, &Game::restartGame);
+            connect(gameEndDialog->getExitButton(), &QPushButton::clicked, game, &Game::exitGame);
+            gameEndDialog->exec();
+        } break;
+        case GameState::Draw:
+        {
+            this->gameEndDialog = new GameEndDialog();
+            this->gameEndDialog->draw();
+            connect(gameEndDialog->getRestartButton(), &QPushButton::clicked, game, &Game::restartGame);
+            connect(gameEndDialog->getExitButton(), &QPushButton::clicked, game, &Game::exitGame);
+            gameEndDialog->exec();
+        } break;
     }
     QGraphicsView::mouseReleaseEvent(event);
 }

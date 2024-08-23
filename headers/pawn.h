@@ -10,6 +10,8 @@ public:
     Pawn(const Pawn& other);
     void setImage() override;
     std::vector<BoardPosition> getValidMoves(const ChessBoard& chessboard) const override;
+    std::vector<BoardPosition> getValidNormalMoves(const ChessBoard& chessboard) const override;
+    std::vector<BoardPosition> getValidCaptureMoves(const ChessBoard& chessboard) const override;
     ChessPiece* clone() const override;
 };
 

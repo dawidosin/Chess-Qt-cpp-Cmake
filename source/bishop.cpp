@@ -15,6 +15,7 @@ Bishop::Bishop(const Bishop& other)
 {
     this->boardpos = other.boardpos;
     this->piecetype = other.piecetype;
+    this->isFirstMove = other.isFirstMove;
     setImage();
 }
 

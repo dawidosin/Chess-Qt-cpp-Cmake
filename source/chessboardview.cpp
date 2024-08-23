@@ -16,17 +16,19 @@ void ChessBoardView::ShowPossibleMoves()
         HidePossibleMoves();
 
         chessboard->PossibleMoves = chessboard->ActivePiece->getValidMoves(*chessboard);
-        chessboard->ValidateIsKingCheckAfterMoves(chessboard->PossibleMoves);
+        chessboard->ValidateIsKingCheckAfterMoves(chessboard->PossibleMoves, chessboard->ActivePiece);
 
         for (const auto& possmove : chessboard->PossibleMoves)
         {
             QGraphicsPixmapItem *img;
+            // normal move graphic
             if (chessboard->chessbox[possmove.y][possmove.x]->getPiece() == nullptr)
             {
                 QPixmap pixmap(":/img/dot.png");
                 pixmap = pixmap.scaled(QSize(BoxSize, BoxSize), Qt::KeepAspectRatio);
                 img = new QGraphicsPixmapItem(pixmap);
             }
+            // capture move graphic
             else
             {
                 QPixmap pixmap(":/img/kill.png");

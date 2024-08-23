@@ -1,7 +1,7 @@
 #include "../headers/king.h"
 #include "../headers/globals.h"
 #include "../headers/chessboard.h"
-
+#include <QDebug>
 King::King(PieceColor _piececolor=PieceColor::Black):
     ChessPiece(_piececolor)
 {
@@ -15,6 +15,7 @@ King::King(const King& other)
 {
     this->boardpos = other.boardpos;
     this->piecetype = other.piecetype;
+    this->isFirstMove = other.isFirstMove;
     setImage();
 }
 
@@ -39,7 +40,7 @@ void King::setImage()
     }
 }
 
-std::vector<BoardPosition> King::getValidMoves(const ChessBoard& chessboard) const
+std::vector<BoardPosition> King::getMovesWithoutCastle(const ChessBoard& chessboard) const
 {
     std::vector<BoardPosition> ValidMoves;
     std::vector<ChessBox*> BoxesToCheck;
@@ -66,9 +67,23 @@ std::vector<BoardPosition> King::getValidMoves(const ChessBoard& chessboard) con
             BoxesToCheck.erase(BoxesToCheck.begin() + i);
     }
 
+    // adding Valid moves
+    for(auto a: BoxesToCheck)
+        ValidMoves.push_back(a->getBoardPositon());
+
+    return ValidMoves;
+}
+
+
+std::vector<BoardPosition> King::getValidNormalMoves(const ChessBoard& chessboard) const
+{
+    std::vector<BoardPosition> ValidMoves = getMovesWithoutCastle(chessboard);
+    std::vector<BoardPosition> ValidNormalMoves;
+
     // checks wheter any chesspiece is blocking our King to castle
     auto isAnyPieceInTheRookToKingWay = [&chessboard](const ChessPiece& Rook, const ChessPiece& King) -> bool
     {
+        int Pos_x_to_Check = King.boardpos.x;
         int difference = 0;
 
         if(King.boardpos.x - Rook.boardpos.x > 0) // Rook is on the left
@@ -78,9 +93,9 @@ std::vector<BoardPosition> King::getValidMoves(const ChessBoard& chessboard) con
 
         while(true)
         {
-            difference += difference;
+            Pos_x_to_Check += difference;
 
-            const ChessBox* chessbox = chessboard.findChessBox(BoardPosition(King.boardpos.x + difference, King.boardpos.y));
+            const ChessBox* chessbox = chessboard.findChessBox(BoardPosition(Pos_x_to_Check, King.boardpos.y));
             if(chessbox == nullptr)
                 return false;
             const ChessPiece* currentPiece = chessbox->getPiece();
@@ -122,39 +137,83 @@ std::vector<BoardPosition> King::getValidMoves(const ChessBoard& chessboard) con
         }
     };
 
+    // getting Moves that are not a Capture
+    for(int i=ValidMoves.size() - 1;i >= 0;i--)
+    {
+        if(chessboard.findChessBox(ValidMoves[i])->getPiece() == nullptr)
+        {
+            ValidNormalMoves.push_back(std::move(ValidMoves[i]));
+            ValidMoves.erase(ValidMoves.begin() + i);
+        }
+    }
+
     /* Checking for possible castling.
         1. Neither the king nor the rook has previously moved.
         2. There are no pieces between the king and the rook.
         3. The king is not currently in check.
         4. The king does not pass through or finish on a square that is attacked by an enemy piece
     */
-
     if(this->isFirstMove == true)
     {
         const ChessPiece* LeftRook = chessboard.findPiece(BoardPosition(0, this->boardpos.y));
         const ChessPiece* RightRook = chessboard.findPiece(BoardPosition(7, this->boardpos.y));
 
-            // left castling requirement
+        // left castling requirement
         if(LeftRook != nullptr && LeftRook->getType() == PieceType::Rook &&
             LeftRook->isFirstMove == true && isAnyPieceInTheRookToKingWay(*LeftRook, *this) == false &&
             Game::gamestate != GameState::Check && isAnyPieceAttackingCastlingBoxes(*LeftRook, *this) == false)
         {
-            ValidMoves.push_back(BoardPosition(this->boardpos.x - 2, this->boardpos.y));
+            ValidNormalMoves.push_back(BoardPosition(this->boardpos.x - 2, this->boardpos.y));
         }
+
+        if(RightRook != nullptr && RightRook->getType() == PieceType::Rook &&
+            RightRook->isFirstMove == true && isAnyPieceInTheRookToKingWay(*RightRook, *this) == true || Game::gamestate == GameState::Check)
+                qDebug() << "blad isAnyPieceInTheRookToKingWay" << Qt::endl;
+
+        if(RightRook != nullptr && RightRook->getType() == PieceType::Rook &&
+            RightRook->isFirstMove == true && isAnyPieceAttackingCastlingBoxes(*RightRook, *this) == true || Game::gamestate == GameState::Check)
+                qDebug() << "blad isAnyPieceAttackingCastlingBoxes" << Qt::endl;
+
+        qDebug() << Qt::endl;
 
         // right castling requirement
         if(RightRook != nullptr && RightRook->getType() == PieceType::Rook &&
             RightRook->isFirstMove == true && isAnyPieceInTheRookToKingWay(*RightRook, *this) == false &&
             Game::gamestate != GameState::Check && isAnyPieceAttackingCastlingBoxes(*RightRook, *this) == false)
         {
-            ValidMoves.push_back(BoardPosition(this->boardpos.x + 2, this->boardpos.y));
+            ValidNormalMoves.push_back(BoardPosition(this->boardpos.x + 2, this->boardpos.y));
         }
     }
 
+    return ValidNormalMoves;
+}
 
-    // adding Valid moves
-    for(auto a: BoxesToCheck)
-        ValidMoves.push_back(a->getBoardPositon());
+std::vector<BoardPosition> King::getValidCaptureMoves(const ChessBoard& chessboard) const
+{
+    std::vector<BoardPosition> ValidMoves = getMovesWithoutCastle(chessboard);
+    std::vector<BoardPosition> ValidCaptrueMoves;
+
+    // adding only capture moves
+    for(int i=ValidMoves.size() - 1;i >= 0;i--)
+    {
+        if(chessboard.findChessBox(ValidMoves[i])->getPiece() != nullptr)
+        {
+            ValidCaptrueMoves.push_back(std::move(ValidMoves[i]));
+            ValidMoves.erase(ValidMoves.begin() + i);
+        }
+    }
+    return ValidCaptrueMoves;
+}
+
+std::vector<BoardPosition> King::getValidMoves(const ChessBoard& chessboard) const
+{
+    std::vector<BoardPosition> ValidMoves;
+    std::vector<BoardPosition> NormalValidMoves = getValidNormalMoves(chessboard);
+    std::vector<BoardPosition> CaptureValidMoves =  getValidCaptureMoves(chessboard);
+
+    ValidMoves.reserve(NormalValidMoves.size() + CaptureValidMoves.size());
+    ValidMoves.insert(ValidMoves.end(), NormalValidMoves.begin(), NormalValidMoves.end());
+    ValidMoves.insert(ValidMoves.end(), CaptureValidMoves.begin(), CaptureValidMoves.end());
 
     return ValidMoves;
 }

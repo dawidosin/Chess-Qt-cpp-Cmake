@@ -15,6 +15,7 @@ Rook::Rook(const Rook& other)
 {
     this->boardpos = other.boardpos;
     this->piecetype = other.piecetype;
+    this->isFirstMove = other.isFirstMove;
     setImage();
 }
 

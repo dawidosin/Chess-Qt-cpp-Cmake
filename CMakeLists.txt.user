@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 11.0.3, 2024-07-18T00:18:28. -->
+<!-- Written by QtCreator 11.0.3, 2024-08-23T17:03:16. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -386,7 +386,10 @@
    </valuemap>
    <value type="qlonglong" key="ProjectExplorer.Target.DeployConfigurationCount">1</value>
    <valuemap type="QVariantMap" key="ProjectExplorer.Target.RunConfiguration.0">
-    <value type="bool" key="Analyzer.Perf.Settings.UseGlobalSettings">true</value>
+    <valuelist type="QVariantList" key="Analyzer.Perf.Events">
+     <value type="QString">cpu-cycles</value>
+    </valuelist>
+    <value type="bool" key="Analyzer.Perf.Settings.UseGlobalSettings">false</value>
     <value type="bool" key="Analyzer.QmlProfiler.Settings.UseGlobalSettings">true</value>
     <value type="bool" key="Analyzer.Valgrind.Settings.UseGlobalSettings">true</value>
     <valuelist type="QVariantList" key="CustomOutputParsers"/>
@@ -399,7 +402,6 @@
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
     <value type="bool" key="RunConfiguration.UseLibrarySearchPath">true</value>
     <value type="bool" key="RunConfiguration.UseQmlDebuggerAuto">true</value>
-    <value type="QString" key="RunConfiguration.WorkingDirectory.default">C:/Users/dawid/Desktop/QT projekty/AI Chess/build-ChessAi-Desktop_Qt_6_6_0_MSVC2019_64bit-Debug</value>
    </valuemap>
    <value type="qlonglong" key="ProjectExplorer.Target.RunConfigurationCount">1</value>
   </valuemap>

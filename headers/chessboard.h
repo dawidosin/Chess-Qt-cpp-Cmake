@@ -62,9 +62,11 @@ private:
     void RemoveChessPiece(ChessPiece *PieceToRemove);
     ChessBox* getBoxAtBoardPosition(BoardPosition pos);
     ChessPiece* getPieceAtBoardPosition(BoardPosition pos);
-    bool isValidMove(BoardPosition move);
+    bool isValidMove(BoardPosition move) const;
+    bool PlayerHaveMove();
     void HandleKingCastling();
-    void ValidateIsKingCheckAfterMoves(std::vector<BoardPosition>& PossibleMoves);
+    void ValidateIsKingCheckAfterMoves(std::vector<BoardPosition>& PossibleMovesCheck, ChessPiece* PieceToCheck);
+    void ResetTheBoard();
 
     friend class ChessBoardCopy;
     friend struct ChessBoardView;

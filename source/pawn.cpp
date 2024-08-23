@@ -40,97 +40,121 @@ void Pawn::setImage()
     }
 }
 
-std::vector<BoardPosition> Pawn::getValidMoves(const ChessBoard& chessboard) const
+std::vector<BoardPosition> Pawn::getValidNormalMoves(const ChessBoard& chessboard) const
 {
     std::vector<BoardPosition> ValidMoves;
 
-    // holds Color of ChessPiece that are on the bottom of the ChessBoard
-    PieceColor BottomPiecesColor = chessboard.getBottomPiecesColor();
-        /*
-          If we find the chessbox, then we are checking
-          is given chessbox occupied. If yes: for moving we are skiiping,
-          for taking piece we are adding to ValidMoves.
-        */
-        if(this->getColor() == BottomPiecesColor) // i.e. for bottom Pieces
+    /*
+        If we find the chessbox, then we are checking
+        is given chessbox occupied. If yes: for moving we are skiiping,
+        for taking piece we are adding to ValidMoves.
+    */
+    if(this->getColor() == chessboard.getBottomPiecesColor()) // i.e. for bottom Pieces
+    {
+        // one move forward
+        ChessBox* possmove1 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y - 1));
+
+        if(possmove1 != nullptr && possmove1->getPiece() == nullptr)
         {
-            // one move forward
-            ChessBox* possmove1 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y - 1));
+            ValidMoves.push_back(possmove1->getBoardPositon());
 
-            if(possmove1 != nullptr && possmove1->getPiece() == nullptr)
+            // two moves forward
+            if(isFirstMove)
             {
-                ValidMoves.push_back(possmove1->getBoardPositon());
-
-                // two moves forward
-                if(isFirstMove)
+                ChessBox* possmove2 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y - 2));
+                if(possmove2 != nullptr)
                 {
-                    ChessBox* possmove2 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y - 2));
-                    if(possmove2 != nullptr)
-                    {
-                        if(possmove2->getPiece() != nullptr)
-                            return ValidMoves;
-                        else
-                            ValidMoves.push_back(possmove2->getBoardPositon());
-                    }
+                    if(possmove2->getPiece() != nullptr)
+                        return ValidMoves;
+                    else
+                        ValidMoves.push_back(possmove2->getBoardPositon());
                 }
             }
-
-            // diagonal capturing piece
-            ChessBox* posstake1 = chessboard.findChessBox(BoardPosition(boardpos.x - 1, boardpos.y - 1));
-            ChessBox* posstake2 = chessboard.findChessBox(BoardPosition(boardpos.x + 1, boardpos.y - 1));
-            if(posstake1 != nullptr)
-            {
-                // if it's Piece from opposite team
-                if(posstake1->getPiece() != nullptr &&
-                    posstake1->getPiece()->getColor() != this->getColor())
-                    ValidMoves.push_back(posstake1->getBoardPositon());
-            }
-            if(posstake2 != nullptr)
-            {
-                if(posstake2->getPiece() != nullptr &&
-                    posstake2->getPiece()->getColor() != this->getColor())
-                    ValidMoves.push_back(posstake2->getBoardPositon());
-            }
         }
-        else //i.e. for upper Pieces
+    }
+    else //i.e. for upper Pieces
+    {
+        // one move forward
+        ChessBox* possmove1 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y + 1));
+
+        if(possmove1 != nullptr && possmove1->getPiece() == nullptr)
         {
-            // one move forward
-            ChessBox* possmove1 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y + 1));
+            ValidMoves.push_back(possmove1->getBoardPositon());
 
-            if(possmove1 != nullptr && possmove1->getPiece() == nullptr)
+            // two moves forward
+            if(isFirstMove)
             {
-                ValidMoves.push_back(possmove1->getBoardPositon());
-
-                // two moves forward
-                if(isFirstMove)
+                ChessBox* possmove2 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y + 2));
+                if(possmove2 != nullptr)
                 {
-                    ChessBox* possmove2 = chessboard.findChessBox(BoardPosition(boardpos.x, boardpos.y + 2));
-                    if(possmove2 != nullptr)
-                    {
-                        if(possmove2->getPiece() != nullptr)
-                            return ValidMoves;
-                        else
-                            ValidMoves.push_back(possmove2->getBoardPositon());
-                    }
+                    if(possmove2->getPiece() != nullptr)
+                        return ValidMoves;
+                    else
+                        ValidMoves.push_back(possmove2->getBoardPositon());
                 }
             }
-
-            // diagonal capturing piece
-            ChessBox* posstake1 = chessboard.findChessBox(BoardPosition(boardpos.x - 1, boardpos.y + 1));
-            ChessBox* posstake2 = chessboard.findChessBox(BoardPosition(boardpos.x + 1, boardpos.y + 1));
-            if(posstake1 != nullptr)
-            {
-                // if it's Piece from opposite team
-                if(posstake1->getPiece() != nullptr &&
-                    posstake1->getPiece()->getColor() != this->getColor())
-                    ValidMoves.push_back(posstake1->getBoardPositon());
-            }
-            if(posstake2 != nullptr)
-            {
-                if(posstake2->getPiece() != nullptr &&
-                    posstake2->getPiece()->getColor() != this->getColor())
-                    ValidMoves.push_back(posstake2->getBoardPositon());
-            }
         }
+    }
+
+    return ValidMoves;
+}
+
+std::vector<BoardPosition> Pawn::getValidCaptureMoves(const ChessBoard& chessboard) const
+{
+    std::vector<BoardPosition> ValidMoves;
+
+    if(this->getColor() == chessboard.getBottomPiecesColor()) // i.e. for bottom Pieces
+    {
+        // diagonal capturing piece
+        ChessBox* posstake1 = chessboard.findChessBox(BoardPosition(boardpos.x - 1, boardpos.y - 1));
+        ChessBox* posstake2 = chessboard.findChessBox(BoardPosition(boardpos.x + 1, boardpos.y - 1));
+        if(posstake1 != nullptr)
+        {
+            // if it's Piece from opposite team
+            if(posstake1->getPiece() != nullptr &&
+                posstake1->getPiece()->getColor() != this->getColor())
+                ValidMoves.push_back(posstake1->getBoardPositon());
+        }
+        if(posstake2 != nullptr)
+        {
+            if(posstake2->getPiece() != nullptr &&
+                posstake2->getPiece()->getColor() != this->getColor())
+                ValidMoves.push_back(posstake2->getBoardPositon());
+        }
+    }
+    else //i.e. for upper Pieces
+    {
+
+        // diagonal capturing piece
+        ChessBox* posstake1 = chessboard.findChessBox(BoardPosition(boardpos.x - 1, boardpos.y + 1));
+        ChessBox* posstake2 = chessboard.findChessBox(BoardPosition(boardpos.x + 1, boardpos.y + 1));
+        if(posstake1 != nullptr)
+        {
+            // if it's Piece from opposite team
+            if(posstake1->getPiece() != nullptr &&
+                posstake1->getPiece()->getColor() != this->getColor())
+                ValidMoves.push_back(posstake1->getBoardPositon());
+        }
+        if(posstake2 != nullptr)
+        {
+            if(posstake2->getPiece() != nullptr &&
+                posstake2->getPiece()->getColor() != this->getColor())
+                ValidMoves.push_back(posstake2->getBoardPositon());
+        }
+    }
+
+    return ValidMoves;
+}
+
+std::vector<BoardPosition> Pawn::getValidMoves(const ChessBoard& chessboard) const
+{
+    std::vector<BoardPosition> ValidMoves;
+    std::vector<BoardPosition> NormalValidMoves = getValidNormalMoves(chessboard);
+    std::vector<BoardPosition> CaptureValidMoves =  getValidCaptureMoves(chessboard);
+
+    ValidMoves.reserve(NormalValidMoves.size() + CaptureValidMoves.size());
+    ValidMoves.insert(ValidMoves.end(), NormalValidMoves.begin(), NormalValidMoves.end());
+    ValidMoves.insert(ValidMoves.end(), CaptureValidMoves.begin(), CaptureValidMoves.end());
 
     return ValidMoves;
 }

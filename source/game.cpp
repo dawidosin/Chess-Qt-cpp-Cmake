@@ -1,6 +1,5 @@
 #include "../headers/game.h"
 #include "../headers/globals.h"
-#include <QDebug>
 
 Game::Game(QWidget *parent = nullptr, PieceColor _PlayerColor = PieceColor::White) : QMainWindow(parent),
     scene(new QGraphicsScene(this)), view(new GameView(this)), PlayerColor(_PlayerColor)
@@ -12,7 +11,7 @@ void Game::start()
 {
     // Adding the view as the central widget
     setCentralWidget(view);
-    setFixedSize(ViewWidth, ViewHeight);
+    setFixedSize(ViewWidth, ViewHeight); 
     scene->setSceneRect(0, 0, ViewWidth, ViewHeight);
     setMouseTracking(true);
 
@@ -27,5 +26,24 @@ void Game::start()
     view->setScene(scene);
 }
 
+void Game::restartGame()
+{
+    delete chessboard;
+    chessboard = new ChessBoard(scene, PlayerColor);
+    chessboard->InitializeBoard();
+    Game::gamestate = GameState::Default;
+
+    view->gameEndDialog->accept();
+    delete view->gameEndDialog;
+}
+
+void Game::exitGame()
+{
+    view->gameEndDialog->accept();
+    delete view->gameEndDialog;
+    Game::gamestate = GameState::Default;
+
+    QApplication::quit();
+}
 
 

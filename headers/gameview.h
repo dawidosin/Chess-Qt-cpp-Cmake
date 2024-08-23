@@ -5,13 +5,15 @@
 #include <QGraphicsScene>
 #include <QMouseEvent>
 
+#include "../headers/gameenddialog.h"
+
 class GameView : public QGraphicsView
 {
     Q_OBJECT
 
 public:
     GameView(QWidget *parent = nullptr);
-
+    GameEndDialog* gameEndDialog = nullptr;
 private:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;

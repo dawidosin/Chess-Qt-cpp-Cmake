@@ -17,7 +17,8 @@ enum GameState
     Default,
     PawnPromotion,
     Check,
-    Checkmate
+    Checkmate,
+    Draw
 };
 
 // Links all the components in the game.
@@ -35,6 +36,10 @@ private:
     GameView *view;
     QGraphicsScene *scene;
     PieceColor PlayerColor;
+
+public slots:
+    void restartGame();
+    void exitGame();
 
     friend class GameView;
 };

@@ -30,8 +30,12 @@ class ChessPiece: public QGraphicsPixmapItem
 public:
     BoardPosition boardpos;
     bool isFirstMove = true;
-    //virtual bool isCastling();
+    // returns all possible moves
     virtual std::vector<BoardPosition> getValidMoves(const ChessBoard& chessboard) const = 0;
+    // returns all Moves without capture
+    virtual std::vector<BoardPosition> getValidNormalMoves(const ChessBoard& chessboard) const;
+    // returns all capture moves
+    virtual std::vector<BoardPosition> getValidCaptureMoves(const ChessBoard& chessboard) const;
     virtual ChessPiece* clone() const = 0;
     virtual void setImage() = 0;
     PieceColor getColor() const;
