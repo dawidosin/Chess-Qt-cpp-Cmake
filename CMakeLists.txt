@@ -6,6 +6,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -47,14 +48,25 @@ add_executable(ChessAi
   source/gameview.cpp
   headers/chessboardcopy.h
   source/chessboardcopy.cpp
-  headers/movelist.h
-  source/movelist.cpp
+  headers/movesstack.h
+  source/movesstack.cpp
   headers/chessboardview.h
   source/chessboardview.cpp
   headers/pawnpromotion.h
   source/pawnpromotion.cpp
   headers/gameenddialog.h
   source/gameenddialog.cpp
+  headers/movegenerator.h
+  source/movegenerator.cpp
+  headers/sidebarmenu.h
+  source/sidebarmenu.cpp
+
+  headers/imagemanager.h
+  headers/interface.h
+  source/interface.cpp
+  headers/movemanager.h
+  source/movemanager.cpp
+  headers/king.h
 
 
 

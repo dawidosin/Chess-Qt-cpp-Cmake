@@ -10,13 +10,9 @@ void GameEndDialog::win(PieceColor currentcolor)
     QLabel *label = nullptr;
 
     if(currentcolor == PieceColor::White)
-    {
         label = new QLabel("Black wins!", this);
-    }
     else
-    {
         label = new QLabel("White wins!", this);
-    }
 
     label->setAlignment(Qt::AlignCenter);
     restartButton = new QPushButton("Restart", this);

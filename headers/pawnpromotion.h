@@ -5,19 +5,19 @@
 
 #include "chesspiece.h"
 
+class ChessBoard;
+
 /*
    Its 4x1 Rectangle that shows all ChessPiece
    options for pawn promotion.
  */
-class ChessBoard;
-
 class PawnPromotion
 {
 public:
     PawnPromotion(ChessBoard* _chessboard);
-    PieceType getPieceTypeAtPosition();
-    void show();
-    void hide();
+    PieceType getPieceTypeAtMousePos() const;
+    void show(QGraphicsScene* scene);
+    void hide(QGraphicsScene* scene);
     QGraphicsRectItem* rectangle;
     ChessPiece* pawn;
 private:

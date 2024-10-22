@@ -5,11 +5,9 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QVBoxLayout>
-#include "chesspiece.h"
+#include "globals.h"
 
 class GameEndDialog : public QDialog {
-    Q_OBJECT
-
 public:
     explicit GameEndDialog();
 

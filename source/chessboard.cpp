@@ -7,17 +7,20 @@
 #include "../headers/king.h"
 #include "../headers/globals.h"
 #include "../headers/chessboardcopy.h"
-#include "../headers/gameenddialog.h"
+#include "../headers/movegenerator.h"
+#include "../headers/movesstack.h"
 
 #include <cmath>
 
 /*
     Creating chessboard with pieces
 */
-ChessBoard::ChessBoard(QGraphicsScene *_scene, PieceColor _PlayerColor) :
-    scene(_scene), PlayerColor(_PlayerColor), moves(this), boardview(this)
+ChessBoard::ChessBoard(MoveManager* _movemanager, QGraphicsScene *_scene, PieceColor _PlayerColor) :
+    scene(_scene), PlayerColor(_PlayerColor), boardview(new ChessBoardView(this, _scene)), ActivePiece(nullptr),
+    movemanager(_movemanager)
 {
-    scene->setSceneRect(0, 0, ViewWidth, ViewHeight);
+    _movemanager->movegenerator.setChessBoard(*this);
+
     // adding Boxes
     for(int y = 0; y < 8; y++)
     {
@@ -86,11 +89,18 @@ ChessBoard::ChessBoard(QGraphicsScene *_scene, PieceColor _PlayerColor) :
 
 // deafault constructor for ChessBoardCopy
 ChessBoard::ChessBoard() :
-    scene(nullptr), PlayerColor(PieceColor::White), moves(this), boardview(this)
+    scene(nullptr), PlayerColor(PieceColor::White), boardview(new ChessBoardView(this, nullptr)), ActivePiece(nullptr)
 {}
 
 ChessBoard::~ChessBoard()
 {
+    // it means that this is ChessBoardCopy obj and
+    // it's already cleaned up
+    if(scene == nullptr)
+        return;
+
+    delete boardview;
+
     // removing from scene
     for(int y = 0; y < 8; y++)
     {
@@ -109,7 +119,7 @@ ChessBoard::~ChessBoard()
     {
         for(int x = 0; x < 8; x++)
         {
-                delete chessbox[y][x];
+            delete chessbox[y][x];
         }
     }
     for (auto piece : WhitePiece)
@@ -118,7 +128,7 @@ ChessBoard::~ChessBoard()
     delete piece;
 }
 // adding all Items to the scene
-void ChessBoard::InitializeBoard()
+void ChessBoard::Initialize()
 {
     // adding boxes
     for(int y = 0; y < 8; y++)
@@ -136,36 +146,19 @@ void ChessBoard::InitializeBoard()
 }
 
 // returns ChessPiece that contains point
-ChessPiece* ChessBoard::getPieceAtMousePosition(QPointF point)
+ChessPiece* ChessBoard::getPieceAtMousePos(QPointF point) const
 {
-    auto isPointInBox = [](const QPointF cord, int width, const QPointF pkt) -> bool {
-        int x1 = cord.x();
-        int y1 = cord.y();
-        int x2 = x1 + width;
-        int y2 = y1 + width;
-
-        int px = pkt.x();
-        int py = pkt.y();
-
-        return (px >= x1 && px <= x2 && py >= y1 && py <= y2);
-    };
-
     for(auto const& a: WhitePiece)
     {
-        if(isPointInBox(a->pos(), BoxSize, point))
+        if(a->boundingRect().contains(a->mapFromParent(point)))
             return a;
     }
     for(auto const& a: BlackPiece)
     {
-        if(isPointInBox(a->pos(), BoxSize, point))
+        if(a->boundingRect().contains(a->mapFromParent(point)))
             return a;
     }
     return nullptr;
-}
-
-ChessPiece* ChessBoard::getPieceAtBoardPosition(BoardPosition pos)
-{
-    return  getBoxAtBoardPosition(pos)->piece;
 }
 
 /* It transforms Pawn into other ChessPiece,
@@ -174,29 +167,37 @@ ChessPiece* ChessBoard::getPieceAtBoardPosition(BoardPosition pos)
  */
 void ChessBoard::ChoosePawnPromotion(QPointF point)
 {
-    ChessPiece* PromotingPawn = boardview.pawnpromotion.pawn;
-    BoardPosition PawnBoardPos= boardview.pawnpromotion.pawn->boardpos;
-    PieceType ChosenPieceType = boardview.pawnpromotion.getPieceTypeAtPosition();
+    ChessPiece* PromotingPawn = boardview->pawnpromotion.pawn;
+    BoardPosition PawnBoardPos= boardview->pawnpromotion.pawn->getBoardpositon();
+    PieceType ChosenPieceType = boardview->pawnpromotion.getPieceTypeAtMousePos();
     ChessPiece* ChosenPiece = nullptr;
 
-    if(ChosenPieceType == PieceType::None)
+    if(ChosenPieceType == PieceType::NONE)
         return;
     else
     {
         switch(ChosenPieceType)
         {
-            case PieceType::Queen:
+            case PieceType::QUEEN:
                 ChosenPiece = new Queen(PromotingPawn->getColor());
+                movemanager->moves.LastMove()->PawnPromotionPieceType = PieceType::QUEEN;
             break;
-            case PieceType::Rook:
+            case PieceType::ROOK:
                 ChosenPiece = new Rook(PromotingPawn->getColor());
+                 movemanager->moves.LastMove()->PawnPromotionPieceType = PieceType::ROOK;
             break;
-            case PieceType::Bishop:
+            case PieceType::BISHOP:
                 ChosenPiece = new Bishop(PromotingPawn->getColor());
+                 movemanager->moves.LastMove()->PawnPromotionPieceType = PieceType::BISHOP;
             break;
-            case PieceType::Knight:
+            case PieceType::KNIGHT:
                 ChosenPiece = new Knight(PromotingPawn->getColor());
+                 movemanager->moves.LastMove()->PawnPromotionPieceType = PieceType::KNIGHT;
             break;
+            case PieceType::NONE:
+            case PieceType::KING:
+            case PieceType::PAWN:
+                break;
         }
 
         if(PromotingPawn->getColor() == PieceColor::White)
@@ -205,37 +206,47 @@ void ChessBoard::ChoosePawnPromotion(QPointF point)
             BlackPiece.push_back(ChosenPiece);
 
         RemoveChessPiece(PromotingPawn);
-        boardview.HidePawnPromotion();
-
         setPieceInBoardPos(ChosenPiece, PawnBoardPos);
         scene->addItem(ChosenPiece);
-        Game::gamestate = GameState::Default;
+        ActivePiece = ChosenPiece;
+        boardview->Clear();
     }
 }
 // Moves the rook in order to make castling with king
 void ChessBoard::HandleKingCastling()
 {
-    BoardPosition KingPos = {0,0};
-    if(getCurrentPlayerColor() == PieceColor::White)
-        KingPos = getKing(PieceColor::Black)->boardpos;
-    else
-        KingPos = getKing(PieceColor::White)->boardpos;
-
-    const Move& currentMove = moves.top();
-    // true (right castling)
-    // false (left castling)
-    bool isRightCastling = (currentMove.endpos.x - currentMove.startpos.x > 0 ? true : false );
+    PieceColor KingColor = (getCurrentPlayerColor() == PieceColor::White ? PieceColor::Black : PieceColor::White);
+    BoardPosition KingPos = getKing(KingColor)->getBoardpositon();
+    const Move& currentMove = *movemanager->moves.LastMove();
+    bool isShortCastle = (currentMove.endpos.x - currentMove.startpos.x > 0 ? true : false );
     ChessPiece* RookChessPiece = nullptr;
+    PieceColor BottomColor = getBottomPiecesColor();
 
-    if(isRightCastling)
+    if(BottomColor == PieceColor::White)
     {
-        RookChessPiece = getPieceAtBoardPosition(BoardPosition(7, KingPos.y));
-        setPieceInBoardPos(RookChessPiece, BoardPosition(RookChessPiece->boardpos.x - 2, RookChessPiece->boardpos.y));
+        if(isShortCastle)
+        {
+            RookChessPiece = getPieceAtBoardPos(BoardPosition(7, KingPos.y));
+            setPieceInBoardPos(RookChessPiece, BoardPosition(RookChessPiece->getBoardpositon().x - 2, RookChessPiece->getBoardpositon().y));
+        }
+        else
+        {
+            RookChessPiece = getPieceAtBoardPos(BoardPosition(0, KingPos.y));
+            setPieceInBoardPos(RookChessPiece, BoardPosition(RookChessPiece->getBoardpositon().x +  3, RookChessPiece->getBoardpositon().y));
+        }
     }
     else
     {
-        RookChessPiece = getPieceAtBoardPosition(BoardPosition(0, KingPos.y));
-        setPieceInBoardPos(RookChessPiece, BoardPosition(RookChessPiece->boardpos.x + 3, RookChessPiece->boardpos.y));
+        if(isShortCastle)
+        {
+            RookChessPiece = getPieceAtBoardPos(BoardPosition(0, KingPos.y));
+            setPieceInBoardPos(RookChessPiece, BoardPosition(RookChessPiece->getBoardpositon().x + 2, RookChessPiece->getBoardpositon().y));
+        }
+        else
+        {
+            RookChessPiece = getPieceAtBoardPos(BoardPosition(7, KingPos.y));
+            setPieceInBoardPos(RookChessPiece, BoardPosition(RookChessPiece->getBoardpositon().x - 3, RookChessPiece->getBoardpositon().y));
+        }
     }
 }
 
@@ -245,7 +256,8 @@ void ChessBoard::DragPiece(ChessPiece* piece)
     {
        ActivePiece = piece;
        ActivePiece->setZValue(1);
-       boardview.ShowPossibleMoves();
+       boardview->ShowPossibleMoves();
+       boardview->DraggedPiece = ActivePiece;
     }
 }
 
@@ -255,80 +267,85 @@ void ChessBoard::DropPiece()
 {
     // holds digit cordinates to Dropped ChessBox
     BoardPosition NewChessBoxPos =
-    {
-        static_cast<int>(round((ActivePiece->pos().x())/BoxSize)),
-        static_cast<int>(round((ActivePiece->pos().y())/BoxSize))
+        {
+         static_cast<int>(round((ActivePiece->pos().x())/GLOB::BoxSize)),
+         static_cast<int>(round((ActivePiece->pos().y())/GLOB::BoxSize))
     };
+
+    if(NewChessBoxPos == ActivePiece->getBoardpositon())
+        goto restart; // we dont need to check that cause it's just move in the same position
 
     if (isValidMove(NewChessBoxPos))
     {
+       // clears the board view
+       boardview->Clear();
+
+       // getting chessbox on which user clicked
        ChessBox* NewChessBox = getBoxAtBoardPosition(NewChessBoxPos);
-       ChessBox* OldChessBox = getBoxAtBoardPosition(ActivePiece->boardpos);
 
        // adding Move to our std::queue<Move>
-       moves.AddMove(*NewChessBox, *ActivePiece);
+       movemanager->moves.MakeMove(*NewChessBox, *ActivePiece);
 
        /* Its an capture from chessPiece */
-       if(moves.top().isPieceCaptured == true)
+       if(movemanager->moves.LastMove()->CapturedPieceType != PieceType::NONE)
        {
             RemoveChessPiece(NewChessBox->getPiece());
        }
 
        /* Its normal move */
-       setPieceInBoardPos(ActivePiece, NewChessBox->boardpos);
+       setPieceInBoardPos(ActivePiece, NewChessBox->getBoardPositon());
        ActivePiece->isFirstMove = false;
 
-       /* King check handling */
-       if(isKingInCheck() == true)
-       {
-            // if check-mate
-            if(PlayerHaveMove() == false)
-            {
-                Game::gamestate = GameState::Checkmate;
-            }
-            // if check
-            else
-            {
-                Game::gamestate = GameState::Check;
-                boardview.ShowKingCheck();
-            }
-       }
-       // no longer king check
-       else if (Game::gamestate == GameState::Check)
-       {
-            Game::gamestate = GameState::Default;
-            boardview.HideKingCheck();
-       }
-
-       /* Checking for Draw */
-       if(PlayerHaveMove() == false)
-       {
-           Game::gamestate = GameState::Draw;
-       }
-
        /* Promoting pawn handling */
-       if(moves.top().isPawnPromotion == true)
+       if(movemanager->moves.LastMove()->PawnPromotionPieceType != PieceType::NONE)
        {
-            boardview.ShowPawnPromotion(ActivePiece);
-            Game::gamestate = GameState::PawnPromotion;
+            GLOB::CurrentGameState = GameState::PawnPromotion;
        }
-       else if(moves.top().isKingCastling == true)
+       else if(movemanager->moves.LastMove()->isKingCastling == true)
        {
             HandleKingCastling();
        }
 
-       // incrementing turn
-       if(moves.size() % 2 == 0 && !moves.empty())
-           turn++; // 1 turn == 2 moves
+       // detects what type of game state it is
+       DetectGameState();
     }
     else
     {
-       ActivePiece->setPos(ActivePiece->boardpos.x * BoxSize, ActivePiece->boardpos.y * BoxSize);      
+       restart:
+       ActivePiece->setPos(ActivePiece->getBoardpositon().x * GLOB::BoxSize, ActivePiece->getBoardpositon().y * GLOB::BoxSize);
     }
 
-    boardview.HidePossibleMoves();
+    // cleaning
+    boardview->HidePossibleMoves();
     ActivePiece->setZValue(0);
-    ActivePiece = nullptr;
+    boardview->DraggedPiece = nullptr;
+}
+
+// Detects all game state except PawnPromotion
+void ChessBoard::DetectGameState()
+{
+    /* King check/check mate handling */
+    if(isKingInCheck() == true)
+    {
+       // if check-mate
+       if(PlayerHaveMove() == false)
+       {
+           GLOB::CurrentGameState = GameState::Checkmate;
+           return;
+       }
+       // if check
+       else
+       {
+           GLOB::CurrentGameState = GameState::Check;
+           return;
+       }
+    }
+    /* Checking for Draw */
+    if(PlayerHaveMove() == false)
+    {
+       GLOB::CurrentGameState = GameState::Draw;
+       return;
+    }
 }
 
 bool ChessBoard::isValidMove(BoardPosition move) const
@@ -348,7 +365,7 @@ bool ChessBoard::PlayerHaveMove()
     {
        for(auto const& piece: WhitePiece)
        {
-            std::vector<BoardPosition> PossibleMovesForPiece = piece->getValidMoves(*this);
+            std::vector<BoardPosition> PossibleMovesForPiece = piece->getValidMoves(movemanager->movegenerator);
             ValidateIsKingCheckAfterMoves(PossibleMovesForPiece, piece);
             if(PossibleMovesForPiece.size() > 0)
                 return true;
@@ -358,7 +375,7 @@ bool ChessBoard::PlayerHaveMove()
     {
        for(auto const& piece: BlackPiece)
        {
-            std::vector<BoardPosition> PossibleMovesForPiece = piece->getValidMoves(*this);
+            std::vector<BoardPosition> PossibleMovesForPiece = piece->getValidMoves(movemanager->movegenerator);
             ValidateIsKingCheckAfterMoves(PossibleMovesForPiece, piece);
             if(PossibleMovesForPiece.size() > 0)
                 return true;
@@ -367,9 +384,10 @@ bool ChessBoard::PlayerHaveMove()
     return false;
 }
 
-/* Removing moves which would cause our team king in check.
- We are copying The actual chessboard and we are testing on,
- it is our King in danger by moving piece to actual new chessbox.
+/* Removes moves which would cause our team king in check.
+
+ We are copying The actual chessboard and we are testing on
+ it, is our King in danger by moving piece to actual new chessbox.
  So we can know if after move, our king is in danger.
  If yes then we are removing this move. */
 void ChessBoard::ValidateIsKingCheckAfterMoves(std::vector<BoardPosition>& PossibleMovesCheck, ChessPiece* PieceToCheck)
@@ -381,79 +399,63 @@ void ChessBoard::ValidateIsKingCheckAfterMoves(std::vector<BoardPosition>& Possi
 
     if(PieceToCheck == this->ActivePiece)
        PieceToCheck = chessboard_cpy.ActivePiece;
-    else
-    {
-       PieceToCheck = chessboard_cpy.findPiece(PieceToCheck->boardpos);
-    }
+    else // <---------------------------------------------------------------zmienic !!!!!!!!!!!!!!!!!!!
+       PieceToCheck = chessboard_cpy.getPieceAtBoardPos(PieceToCheck->getBoardpositon());
 
-    for (auto Move = PossibleMovesCheck.begin(); Move != PossibleMovesCheck.end();)
+    for (auto PossMove = PossibleMovesCheck.begin(); PossMove != PossibleMovesCheck.end();)
     {
        /* moving piece in order to check for potential danger after move for our king */
-       // adding move to  std::queue<moves>
-       ChessBox* NewChessBox = chessboard_cpy.getBoxAtBoardPosition(*Move);
-       chessboard_cpy.moves.AddMove(*NewChessBox, *PieceToCheck);
+       // adding move to std::stack<Move>
+       ChessBox* NewChessBox = chessboard_cpy.getBoxAtBoardPosition(*PossMove);
+       chessboard_cpy.movemanager->moves.AddMove(*NewChessBox, *PieceToCheck);
+
+       // its Castling so we don't need to check that
+       if(chessboard_cpy.movemanager->moves.LastMove()->isKingCastling == true)
+       {
+            chessboard_cpy.movemanager->moves.RemoveMove();
+            ++PossMove;
+            continue;
+       }
 
        // its an capture move
        if(NewChessBox->getPiece() != nullptr)
+       {
             chessboard_cpy.RemoveChessPiece(NewChessBox->getPiece());
+       }
+
        // its an normal move
-       chessboard_cpy.setPieceInBoardPos(PieceToCheck, *Move);
+       chessboard_cpy.setPieceInBoardPos(PieceToCheck, *PossMove);
 
        if(chessboard_cpy.isKingInCheck() == true)
-            Move = PossibleMovesCheck.erase(Move);
+            PossMove = PossibleMovesCheck.erase(PossMove);
        else
-            ++Move;
+            ++PossMove;
 
        // move piece to original place
-       chessboard_cpy.moves.UndoMove();
+       chessboard_cpy.movemanager->moves.UndoMove();
     }
-}
 
-bool ChessBoard::isChessBoxAttacked(const BoardPosition boardposition) const
-{
-    if(getCurrentPlayerColor() == PieceColor::Black)
-    {
-       for(auto const& Piece: WhitePiece)
-       {
-            std::vector<BoardPosition> possiblePieceMoves = Piece->getValidCaptureMoves(*this);
-            for(auto const Move: possiblePieceMoves)
-            {
-                if(Move == boardposition)
-                    return true;
-            }
-       }
-    }
-    else
-    {
-       for(auto const& Piece: BlackPiece)
-       {
-            std::vector<BoardPosition> possiblePieceMoves = Piece->getValidCaptureMoves(*this);
-            for(auto const Move: possiblePieceMoves)
-            {
-                if(Move == boardposition)
-                    return true;
-            }
-       }
-    }
-    return false;
 }
 
 // checking is King in check range, by
 // checking all valid moves from the enemy pieces
 bool ChessBoard::isKingInCheck() const
 {
-    if(getCurrentPlayerColor() == PieceColor::Black)
-    {
-       if(isChessBoxAttacked(BlackKing->boardpos) == true)       
-            return true;
-    }
-    else
-    {
-       if(isChessBoxAttacked(WhiteKing->boardpos) == true)
-            return true;
-    }
-    return false;
+    auto start = std::chrono::high_resolution_clock::now();
+    bool test = movemanager->movegenerator.isKingInCheck();
+
+    // Record end time
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // Calculate duration
+    std::chrono::duration<double> duration = end - start;
+
+    // Output the duration in seconds
+    qDebug() << "Elapsed time isKingInCheck(): " << duration.count() << " seconds" << Qt::endl;
+
+    return test;
 }
+
 
 // returns ChessBox ptr
 ChessBox* ChessBoard::getBoxAtBoardPosition(BoardPosition pos)
@@ -465,7 +467,7 @@ ChessBox* ChessBoard::getBoxAtBoardPosition(BoardPosition pos)
 }
 
 // returns ChessBox constant ptr
-ChessBox* ChessBoard::findChessBox(BoardPosition pos) const
+ChessBox* ChessBoard::getChessBox(BoardPosition pos) const
 {
     if((pos.x >= 0 && pos.x <=7) && (pos.y >= 0 && pos.y <=7))
         return this->chessbox[pos.y][pos.x];
@@ -473,9 +475,9 @@ ChessBox* ChessBoard::findChessBox(BoardPosition pos) const
         return nullptr;
 }
 // returns ChessPiece constant ptr
-ChessPiece* ChessBoard::findPiece(BoardPosition pos) const
+ChessPiece* ChessBoard::getPieceAtBoardPos(BoardPosition pos) const
 {
-    return findChessBox(pos)->piece;
+    return getChessBox(pos)->piece;
 }
 
 ChessPiece* ChessBoard::getActivePiece() const
@@ -483,28 +485,20 @@ ChessPiece* ChessBoard::getActivePiece() const
     return ActivePiece;
 }
 
-bool ChessBoard::isPieceActive() const
-{
-    if(ActivePiece)
-       return true;
-    else
-       return false;
-}
-
 void ChessBoard::setPieceInBoardPos(ChessPiece* Piece, BoardPosition BoardPos)
 {
-    getBoxAtBoardPosition(Piece->boardpos)->setPiece(nullptr);
+    getBoxAtBoardPosition(Piece->getBoardpositon())->setPiece(nullptr);
     getBoxAtBoardPosition(BoardPos)->setPiece(Piece);
 }
 
 // removing ChessPiece from the game
 void ChessBoard::RemoveChessPiece(ChessPiece *PieceToRemove)
 {
-    //removing from the scene
+    // removing from scene
     scene->removeItem(PieceToRemove);
 
-    //removing from the ChessBox
-    ChessBox* RemovePieceBox = getBoxAtBoardPosition(PieceToRemove->boardpos);
+    // removing from the ChessBox
+    ChessBox* RemovePieceBox = getBoxAtBoardPosition(PieceToRemove->getBoardpositon());
     RemovePieceBox->setPiece(nullptr);
 
     // removing from the vector
@@ -524,6 +518,21 @@ void ChessBoard::RemoveChessPiece(ChessPiece *PieceToRemove)
     delete PieceToRemove;
 }
 
+void ChessBoard::AddChessPiece(ChessPiece* PieceToAdd, const BoardPosition& boardposition)
+{
+    // adding to scene
+    scene->addItem(PieceToAdd);
+
+    // adding to ChessBox
+    setPieceInBoardPos(PieceToAdd, boardposition);
+
+    // adding to vector
+    if(PieceToAdd->getColor() == PieceColor::White)
+       WhitePiece.push_back(PieceToAdd);
+    else
+       BlackPiece.push_back(PieceToAdd);
+}
+
 // returns PieceColor of ChessPieces
 // which are located on the bottom of the ChessBoard
 PieceColor ChessBoard::getBottomPiecesColor() const
@@ -531,7 +540,7 @@ PieceColor ChessBoard::getBottomPiecesColor() const
 
 PieceColor ChessBoard::getCurrentPlayerColor() const
 {
-    if(moves.size() % 2 == 0 || moves.empty())
+    if(movemanager->moves.size() % 2 == 0 || movemanager->moves.canUndo() == false)
        return PieceColor::White;
     else
        return PieceColor::Black;
@@ -546,4 +555,9 @@ ChessPiece* ChessBoard::getKing(PieceColor color) const
 }
 
 unsigned long long int ChessBoard::getTurn() const
-{ return turn; }
+{
+    if(!movemanager->moves.empty())
+       return movemanager->moves.size() / 2;
+    else
+       return 1;
+}

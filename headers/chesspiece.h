@@ -6,46 +6,32 @@
 #include <QCursor>
 #include <vector>
 #include "boardposition.h"
+#include "globals.h"
+#include "imagemanager.h"
 
-class ChessBoard;
-
-enum class PieceType {
-    King,
-    Queen,
-    Rook,
-    Bishop,
-    Knight,
-    Pawn,
-    None
-};
-
-enum PieceColor
-{
-    Black,
-    White
-};
+class MoveGenerator;
 
 class ChessPiece: public QGraphicsPixmapItem
 {
 public:
-    BoardPosition boardpos;
-    bool isFirstMove = true;
     // returns all possible moves
-    virtual std::vector<BoardPosition> getValidMoves(const ChessBoard& chessboard) const = 0;
-    // returns all Moves without capture
-    virtual std::vector<BoardPosition> getValidNormalMoves(const ChessBoard& chessboard) const;
-    // returns all capture moves
-    virtual std::vector<BoardPosition> getValidCaptureMoves(const ChessBoard& chessboard) const;
+    std::vector<BoardPosition> getValidMoves(MoveGenerator& movegenerator) const;
     virtual ChessPiece* clone() const = 0;
     virtual void setImage() = 0;
-    PieceColor getColor() const;
-    PieceType getType() const;
+    const PieceColor&  getColor() const;
+    const PieceType& getType() const;
+    const BoardPosition& getBoardpositon() const;
+
+    bool isFirstMove = true;
 
     bool operator==(const ChessPiece &other) const;
 protected:
-    ChessPiece(PieceColor _piececolor);
-    PieceColor piececolor;
-    PieceType piecetype;
+    ChessPiece(PieceColor _piececolor, PieceType _piecetype);
+    const PieceColor piececolor;
+    const PieceType piecetype;
+    BoardPosition boardpos;
+
+    friend class ChessBox;
 };
 
 #endif // CHESSPIECE_H

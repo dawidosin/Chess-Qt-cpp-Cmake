@@ -1,23 +1,23 @@
 #include "../headers/pawnpromotion.h"
 #include "../headers/globals.h"
-#include "../headers/chessboard.h"
 #include "../headers/queen.h"
 #include "../headers/rook.h"
 #include "../headers/bishop.h"
 #include "../headers/knight.h"
+#include "../headers/chessboard.h"
 
 PawnPromotion::PawnPromotion(ChessBoard* _chessboard):
     chessboard(_chessboard)
 {}
 
-PieceType PawnPromotion::getPieceTypeAtPosition()
+PieceType PawnPromotion::getPieceTypeAtMousePos() const
 {
     for(const auto& piece: PiecesToChoose)
     {
         if(piece->isUnderMouse())
             return piece->getType();
     }
-    return PieceType::None;
+    return PieceType::NONE;
 }
 
 /*
@@ -28,9 +28,9 @@ PieceType PawnPromotion::getPieceTypeAtPosition()
   displays 1x4 rectangle that contains all of the
   promoting chesspiece options
 */
-void PawnPromotion::show()
+void PawnPromotion::show(QGraphicsScene* scene)
 {
-    rectangle = new QGraphicsRectItem(0, 0, BoxSize, BoxSize*4);
+    rectangle = new QGraphicsRectItem(0, 0, GLOB::BoxSize, GLOB::BoxSize*4);
     rectangle->setPen(QPen(Qt::black));
     rectangle->setBrush(QBrush(Qt::white));
 
@@ -58,26 +58,26 @@ void PawnPromotion::show()
     {        
         PiecesToChoose[i]->setZValue(0);
         PiecesToChoose[i]->setParentItem(rectangle);
-        PiecesToChoose[i]->setPos(QPointF(rectangle->pos().x(), rectangle->pos().y() + (BoxSize*i)));
+        PiecesToChoose[i]->setPos(QPointF(rectangle->pos().x(), rectangle->pos().y() + (GLOB::BoxSize*i)));
     }
 
-    chessboard->scene->addItem(rectangle);
+    scene->addItem(rectangle);
 
-    if(pawn->boardpos.y == 0) // upper pieces
+    if(pawn->getBoardpositon().y == 0) // upper pieces
         rectangle->setPos(pawn->pos());
     else // bottom pieces
-        rectangle->setPos(QPointF(pawn->pos().x(), pawn->pos().y() - BoxSize*3));
+        rectangle->setPos(QPointF(pawn->pos().x(), pawn->pos().y() - GLOB::BoxSize*3));
 }
 
-void PawnPromotion::hide()
+void PawnPromotion::hide(QGraphicsScene* scene)
 {
    for (auto Piece : PiecesToChoose)
     {
-        chessboard->scene->removeItem(Piece);
+        scene->removeItem(Piece);
         delete Piece;
     }
 
     PiecesToChoose.clear();
-    chessboard->scene->removeItem(rectangle);
+    scene->removeItem(rectangle);
     delete rectangle;
 }

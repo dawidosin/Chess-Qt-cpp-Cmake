@@ -1,50 +1,24 @@
 ﻿#include "../headers/chesspiece.h"
-#include "../headers/chessboard.h"
+#include "../headers/movegenerator.h"
 
-ChessPiece::ChessPiece(PieceColor _piececolor = PieceColor::White) :
-    piececolor(_piececolor), QGraphicsPixmapItem(nullptr), boardpos{0,0}
+ChessPiece::ChessPiece(PieceColor _piececolor = PieceColor::White, PieceType _piecetype = PieceType::NONE) :
+    piececolor(_piececolor), piecetype(_piecetype), QGraphicsPixmapItem(nullptr), boardpos{0,0}
 {}
 
-std::vector<BoardPosition> ChessPiece::getValidNormalMoves(const ChessBoard& chessboard) const
+std::vector<BoardPosition> ChessPiece::getValidMoves(MoveGenerator& movegenerator) const
 {
-    std::vector<BoardPosition> ValidMoves = getValidMoves(chessboard);
-    std::vector<BoardPosition> ValidNormalMoves;
-
-    // adding only normal moves without capture
-    for(int i=ValidMoves.size() - 1;i >= 0;i--)
-    {
-        if(chessboard.findChessBox(ValidMoves[i])->getPiece() == nullptr)
-        {
-            ValidNormalMoves.push_back(std::move(ValidMoves[i]));
-            ValidMoves.erase(ValidMoves.begin() + i);
-        }
-    }
-    return ValidNormalMoves;
+    return movegenerator.getPossibleMoves(*this);
 }
-
-std::vector<BoardPosition> ChessPiece::getValidCaptureMoves(const ChessBoard& chessboard) const
-{
-    std::vector<BoardPosition> ValidMoves = getValidMoves(chessboard);
-    std::vector<BoardPosition> ValidCaptrueMoves;
-
-    // adding only capture moves
-    for(int i=ValidMoves.size() - 1;i >= 0;i--)
-    {
-        if(chessboard.findChessBox(ValidMoves[i])->getPiece() != nullptr)
-        {
-            ValidCaptrueMoves.push_back(std::move(ValidMoves[i]));
-            ValidMoves.erase(ValidMoves.begin() + i);
-        }
-    }
-    return ValidCaptrueMoves;
-}
-
 
 bool ChessPiece::operator==(const ChessPiece &other) const
-{ return this->boardpos == other.boardpos; }
+{ return this->getBoardpositon() == other.getBoardpositon(); }
 
-PieceColor ChessPiece::getColor() const
+const PieceColor&  ChessPiece::getColor() const
 { return this->piececolor; }
 
-PieceType ChessPiece::getType() const
+const PieceType& ChessPiece::getType() const
 { return this->piecetype; }
+
+const BoardPosition& ChessPiece::getBoardpositon() const
+{ return this->boardpos; }
+

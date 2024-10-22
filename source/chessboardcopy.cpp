@@ -1,13 +1,18 @@
 #include "../headers/chessboardcopy.h"
+#include "../headers/globals.h"
+#include "../headers/movegenerator.h"
 
-// copy constructor only for Checking The Check for King
-ChessBoardCopy::ChessBoardCopy(const ChessBoard& other)
+
+ChessBoardCopy::ChessBoardCopy(ChessBoard& other): originalBoard(other)
 {
-    this->turn = other.turn;
-    this->scene = new QGraphicsScene;
+    // copying values
+    this->scene = nullptr;
     this->PlayerColor = other.PlayerColor;
-    this->moves = other.moves;
-    this->moves.chessboard = this;
+    this->movemanager = other.movemanager;
+
+    // setting movegenerator and moves to our chessboardcopy
+    this->movemanager->movegenerator.setChessBoard(*this);
+    this->movemanager->moves.setChessBoard(*this);
 
     // copying vectors of ChessPieces
     for (auto piece : other.WhitePiece)
@@ -34,54 +39,85 @@ ChessBoardCopy::ChessBoardCopy(const ChessBoard& other)
     // adding pieces to chessbox
     for (auto& piece : WhitePiece)
     {
-        chessbox[piece->boardpos.y][piece->boardpos.x]->setPiece(piece);
+        chessbox[piece->getBoardpositon().y][piece->getBoardpositon().x]->setPiece(piece);
     }
     for (auto& piece : BlackPiece)
     {
-        chessbox[piece->boardpos.y][piece->boardpos.x]->setPiece(piece);
+        chessbox[piece->getBoardpositon().y][piece->getBoardpositon().x]->setPiece(piece);
     }
 
-    this->ActivePiece = this->getBoxAtBoardPosition(other.ActivePiece->boardpos)->piece;
-    this->WhiteKing =  this->getBoxAtBoardPosition(other.WhiteKing->boardpos)->piece;
-    this->BlackKing = this->getBoxAtBoardPosition(other.BlackKing->boardpos)->piece;
+    this->ActivePiece = this->getBoxAtBoardPosition(other.ActivePiece->getBoardpositon())->piece;
+    this->WhiteKing =  this->getBoxAtBoardPosition(other.WhiteKing->getBoardpositon())->piece;
+    this->BlackKing = this->getBoxAtBoardPosition(other.BlackKing->getBoardpositon())->piece;
 }
 
+ChessBoardCopy::~ChessBoardCopy()
+{
+    // Cleaning after ChessBoardCopy used movegenerator
+    movemanager->movegenerator.setChessBoard(originalBoard);
+    movemanager->moves.setChessBoard(originalBoard);
+
+    delete boardview;
+
+    // deleting objects
+    for(int y = 0; y < 8; y++)
+    {
+        for(int x = 0; x < 8; x++)
+        {
+            delete chessbox[y][x];
+        }
+    }
+    for (auto piece : WhitePiece)
+        delete piece;
+    for (auto piece : BlackPiece)
+        delete piece;
+}
 // It's an overrided function cause it get's the curr color and uses BlackPiece vector and so on
 // but the base class use opposite approach so if curr color is White it checks the WhitePiece vector
-//
-// checking is King in check range, by
-// checking all valid moves from the enemy pieces
 bool ChessBoardCopy::isKingInCheck() const
 {
-    if(getCurrentPlayerColor() == PieceColor::White)
+    return movemanager->movegenerator.isKingInCheck();
+}
+
+PieceColor ChessBoardCopy::getCurrentPlayerColor() const
+{
+    if(movemanager->moves.size() % 2 == 0 || movemanager->moves.canUndo() == false)
+        return PieceColor::Black;
+    else
+        return PieceColor::White;
+}
+
+void ChessBoardCopy::RemoveChessPiece(ChessPiece *PieceToRemove)
+{
+    // removing from the ChessBox
+    ChessBox* RemovePieceBox = getBoxAtBoardPosition(PieceToRemove->getBoardpositon());
+    RemovePieceBox->setPiece(nullptr);
+
+    // removing from the vector
+    if(PieceToRemove->getColor() == PieceColor::White)
     {
-        for(auto const& Piece: WhitePiece)
-        {
-            std::vector<BoardPosition> possiblePieceMoves = Piece->getValidCaptureMoves(*this);
-            for(auto const Move: possiblePieceMoves)
-            {
-                if(Move == BlackKing->boardpos)
-                {
-                    return true;
-                }
-            }
-        }
+        auto it = std::remove(WhitePiece.begin(), WhitePiece.end(), PieceToRemove);
+        if (it != WhitePiece.end())
+            WhitePiece.erase(it, WhitePiece.end());
     }
     else
     {
-        for(auto const& Piece: BlackPiece)
-        {
-            std::vector<BoardPosition> possiblePieceMoves = Piece->getValidCaptureMoves(*this);
-            for(auto const Move: possiblePieceMoves)
-            {
-                if(Move == WhiteKing->boardpos)
-                {
-                    return true;
-                }
-            }
-        }
+        auto it = std::remove(BlackPiece.begin(), BlackPiece.end(), PieceToRemove);
+        if (it != BlackPiece.end())
+            BlackPiece.erase(it, BlackPiece.end());
     }
-    return false;
+
+    delete PieceToRemove;
 }
 
+void ChessBoardCopy::AddChessPiece(ChessPiece* PieceToAdd, const BoardPosition& boardposition)
+{
+    // adding to ChessBox
+    setPieceInBoardPos(PieceToAdd, boardposition);
 
+    // adding to vector
+    if(PieceToAdd->getColor() == PieceColor::White)
+        WhitePiece.push_back(PieceToAdd);
+    else
+        BlackPiece.push_back(PieceToAdd);
+}

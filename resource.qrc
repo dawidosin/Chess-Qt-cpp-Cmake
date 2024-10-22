@@ -16,5 +16,9 @@
         <file>img/bishop_black.png</file>
         <file>img/king_white_danger.png</file>
         <file>img/king_black_danger.png</file>
+        <file>img/left_arrow.png</file>
+        <file>img/right_arrow.png</file>
+        <file>img/left_arrow_blocked.png</file>
+        <file>img/right_arrow_blocked.png</file>
     </qresource>
 </RCC>

@@ -4,7 +4,7 @@
 // holds cordinates to 8x8 chessboard in range [0-7]
 struct BoardPosition
 {
-    unsigned int x,y;
+    int x,y;
 
     BoardPosition(int _x, int _y)
     {
@@ -15,6 +15,14 @@ struct BoardPosition
     bool operator==(const BoardPosition& position) const
     {
         return x == position.x && y == position.y;
+    }
+
+    bool operator<(const BoardPosition& other) const
+    {
+        if (x != other.x)
+            return x < other.x;
+        else
+            return y < other.y;
     }
 };
 

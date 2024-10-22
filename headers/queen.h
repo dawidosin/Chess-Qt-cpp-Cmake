@@ -9,7 +9,6 @@ public:
     Queen(PieceColor _piececolor);
     Queen(const Queen& other);
     void setImage() override;
-    std::vector<BoardPosition> getValidMoves(const ChessBoard& chessboard) const override;
     ChessPiece* clone() const override;
 };
 

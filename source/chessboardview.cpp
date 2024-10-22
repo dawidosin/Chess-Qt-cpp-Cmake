@@ -1,10 +1,11 @@
 #include <QGraphicsView>
-
 #include "../headers/chessboardview.h"
 #include "../headers/globals.h"
 #include "../headers/chessboard.h"
+#include "../headers/imagemanager.h"
 
-ChessBoardView::ChessBoardView(ChessBoard* _chessboard): chessboard(_chessboard), pawnpromotion(_chessboard)
+ChessBoardView::ChessBoardView(ChessBoard* _chessboard, QGraphicsScene* _scene): chessboard(_chessboard), pawnpromotion(_chessboard),
+    DraggedPiece(nullptr), scene(_scene)
 {}
 
 // Shows possible moves for ActivePiece
@@ -15,30 +16,23 @@ void ChessBoardView::ShowPossibleMoves()
         // clears previous shown moves
         HidePossibleMoves();
 
-        chessboard->PossibleMoves = chessboard->ActivePiece->getValidMoves(*chessboard);
+        chessboard->PossibleMoves = chessboard->ActivePiece->getValidMoves(chessboard->movemanager->movegenerator);
         chessboard->ValidateIsKingCheckAfterMoves(chessboard->PossibleMoves, chessboard->ActivePiece);
 
         for (const auto& possmove : chessboard->PossibleMoves)
         {
             QGraphicsPixmapItem *img;
+
             // normal move graphic
             if (chessboard->chessbox[possmove.y][possmove.x]->getPiece() == nullptr)
-            {
-                QPixmap pixmap(":/img/dot.png");
-                pixmap = pixmap.scaled(QSize(BoxSize, BoxSize), Qt::KeepAspectRatio);
-                img = new QGraphicsPixmapItem(pixmap);
-            }
+                img = new QGraphicsPixmapItem(ImageManager::Move());
             // capture move graphic
             else
-            {
-                QPixmap pixmap(":/img/kill.png");
-                pixmap = pixmap.scaled(QSize(BoxSize, BoxSize), Qt::KeepAspectRatio);
-                img = new QGraphicsPixmapItem(pixmap);
-            }
+                img = new QGraphicsPixmapItem(ImageManager::Capture());
 
-            img->setPos(possmove.x * BoxSize, possmove.y * BoxSize);
+            img->setPos(possmove.x * GLOB::BoxSize, possmove.y * GLOB::BoxSize);
             PossibleMovesItems.push_back(img);
-            chessboard->scene->addItem(img);
+            scene->addItem(img);
         }
     }
 }
@@ -48,7 +42,7 @@ void ChessBoardView::HidePossibleMoves()
 {
     for (auto img : PossibleMovesItems)
     {
-        chessboard->scene->removeItem(img);
+        scene->removeItem(img);
         delete img;
     }
     PossibleMovesItems.clear();
@@ -58,50 +52,50 @@ void ChessBoardView::HidePossibleMoves()
 void ChessBoardView::ShowKingCheck()
 {
     if(chessboard->getCurrentPlayerColor() == PieceColor::White)
-    {
-        QPixmap pixmap(":/img/king_white_danger.png");
-        pixmap = pixmap.scaled(QSize(BoxSize, BoxSize), Qt::KeepAspectRatio);
-        chessboard->WhiteKing->setPixmap(pixmap);
-    }
+        chessboard->WhiteKing->setPixmap(ImageManager::King_White_Danger());
     else
-    {
-        QPixmap pixmap(":/img/king_black_danger.png");
-        pixmap = pixmap.scaled(QSize(BoxSize, BoxSize), Qt::KeepAspectRatio);
-        chessboard->BlackKing->setPixmap(pixmap);
-    }
+        chessboard->BlackKing->setPixmap(ImageManager::King_Black_Danger());
 }
 
 void ChessBoardView::HideKingCheck()
 {
-    if(chessboard->getCurrentPlayerColor() == PieceColor::Black)
-    {
-        QPixmap pixmap(":/img/king_white.png");
-        pixmap = pixmap.scaled(QSize(BoxSize, BoxSize), Qt::KeepAspectRatio);
-        chessboard->WhiteKing->setPixmap(pixmap);
-    }
+    if(chessboard->getCurrentPlayerColor() == PieceColor::White)
+        chessboard->WhiteKing->setPixmap(ImageManager::King_White());
     else
-    {
-        QPixmap pixmap(":/img/king_black.png");
-        pixmap = pixmap.scaled(QSize(BoxSize, BoxSize), Qt::KeepAspectRatio);
-        chessboard->BlackKing->setPixmap(pixmap);
-    }
+        chessboard->BlackKing->setPixmap(ImageManager::King_Black());
 }
 
 void ChessBoardView::ShowPawnPromotion(ChessPiece* piece)
 {
     pawnpromotion.pawn = piece;
-    pawnpromotion.show();
+    pawnpromotion.show(scene);
 }
 
 void ChessBoardView::HidePawnPromotion()
 {
     pawnpromotion.pawn = nullptr;
-    pawnpromotion.hide();
+    pawnpromotion.hide(scene);
 }
-
 void ChessBoardView::MoveActivePieceToMouse(QPoint point)
 {
     chessboard->ActivePiece->setPos(point.x(), point.y());
 }
 
+void ChessBoardView::Clear()
+{
+    switch(GLOB::CurrentGameState)
+    {
+        case GameState::InPawnPromotion:
+        {
+            GLOB::CurrentGameState = GameState::Default;
+            HidePawnPromotion();
+            chessboard->DetectGameState();
 
+        }break;
+        case GameState::InCheck:
+        {
+            GLOB::CurrentGameState = GameState::Default;
+            HideKingCheck();
+        }break;
+    }
+}

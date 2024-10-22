@@ -7,7 +7,7 @@
 ChessBox::ChessBox(QColor _color, BoardPosition _boardpos)
     : color(_color), boardpos(_boardpos)
 {
-    setRect(boardpos.x * BoxSize, boardpos.y * BoxSize, BoxSize, BoxSize);
+    setRect(boardpos.x * GLOB::BoxSize, boardpos.y * GLOB::BoxSize, GLOB::BoxSize, GLOB::BoxSize);
     setBrush(QBrush(color));
     update();
 
@@ -19,7 +19,7 @@ void ChessBox::setPiece(ChessPiece* _piece)
     if(_piece)
     {
         piece = _piece;
-        piece->setPos(boardpos.x * BoxSize, boardpos.y * BoxSize);
+        piece->setPos(boardpos.x * GLOB::BoxSize, boardpos.y * GLOB::BoxSize);
         piece->boardpos = BoardPosition{boardpos.x, boardpos.y};
     }
     else
@@ -38,7 +38,7 @@ BoardPosition ChessBox::getBoardPositon() const
 
 // overrided functions //
 QRectF ChessBox::boundingRect() const {
-    return QRectF(boardpos.x * BoxSize, boardpos.y * BoxSize, BoxSize, BoxSize);
+    return QRectF(boardpos.x * GLOB::BoxSize, boardpos.y * GLOB::BoxSize, GLOB::BoxSize, GLOB::BoxSize);
 }
 
 void ChessBox::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
@@ -46,6 +46,6 @@ void ChessBox::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
     Q_UNUSED(widget);
 
     painter->setBrush(color);
-    painter->drawRect(boardpos.x * BoxSize, boardpos.y * BoxSize, BoxSize, BoxSize);
+    painter->drawRect(boardpos.x * GLOB::BoxSize, boardpos.y * GLOB::BoxSize, GLOB::BoxSize, GLOB::BoxSize);
 }
 

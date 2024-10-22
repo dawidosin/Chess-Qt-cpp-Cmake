@@ -6,40 +6,30 @@
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QWidget>
-#include <QMouseEvent>
 
-#include "chessbox.h"
 #include "chessboard.h"
+#include "interface.h"
 #include "gameview.h"
-
-enum GameState
-{
-    Default,
-    PawnPromotion,
-    Check,
-    Checkmate,
-    Draw
-};
+#include "movesstack.h"
+#include "movemanager.h"
 
 // Links all the components in the game.
 class Game : public QMainWindow
 {
     Q_OBJECT
-
 public:
-    explicit Game(QWidget *parent, PieceColor _PlayerColor);
+    explicit Game(PieceColor _PlayerColor);
     void start();
-
-    static GameState gamestate;
-private:
-    ChessBoard *chessboard;
-    GameView *view;
-    QGraphicsScene *scene;
-    PieceColor PlayerColor;
-
 public slots:
     void restartGame();
     void exitGame();
+private:
+    ChessBoard* chessboard;
+    Interface* interface;
+    GameView* view;
+    QGraphicsScene* scene;
+    PieceColor PlayerColor;
+    MoveManager* movemanager;
 
     friend class GameView;
 };

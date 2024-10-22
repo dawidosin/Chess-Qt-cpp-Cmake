@@ -9,13 +9,12 @@
 #include <vector>
 
 #include "chessbox.h"
+#include "chesspiece.h"
 #include "globals.h"
 #include "boardposition.h"
-#include "movelist.h"
+#include "movesstack.h"
 #include "chessboardview.h"
-#include "game.h"
-
-class Game;
+#include "movemanager.h"
 
 /*
     Contains the chessboard and all pieces objects.
@@ -24,25 +23,23 @@ class Game;
 class ChessBoard
 {
 public:
-    QGraphicsScene *scene;
-    ChessBoardView boardview;
+    ChessBoardView* boardview;
 
-    ChessBoard(QGraphicsScene *_scene, PieceColor _PlayerColor);
+    ChessBoard(MoveManager* _movemanager, QGraphicsScene* _scene, PieceColor _PlayerColor);
     ChessBoard(); // default
-    void InitializeBoard();
+    void Initialize();
     void DragPiece(ChessPiece* piece);
     void DropPiece();
-    ChessPiece* getPieceAtMousePosition(QPointF point);
+    void DetectGameState();
     void ChoosePawnPromotion(QPointF point);
+    ChessPiece* getPieceAtMousePos(QPointF point) const;
     ChessPiece* getActivePiece() const;
-    bool isPieceActive() const;
     virtual bool isKingInCheck() const;
-    bool isChessBoxAttacked(const BoardPosition boardposition) const;
     ChessPiece* getKing(PieceColor color) const;
-    ChessBox* findChessBox(BoardPosition pos) const;
-    ChessPiece* findPiece(BoardPosition pos) const;
+    ChessBox* getChessBox(BoardPosition pos) const;
+    ChessPiece* getPieceAtBoardPos(BoardPosition pos) const;
     PieceColor getBottomPiecesColor() const;
-    PieceColor getCurrentPlayerColor() const;
+    virtual PieceColor getCurrentPlayerColor() const;
     unsigned long long int getTurn() const;
 
     ~ChessBoard();
@@ -51,26 +48,27 @@ private:
     std::vector <ChessPiece*> WhitePiece;
     std::vector <ChessPiece*> BlackPiece;
     std::vector<BoardPosition> PossibleMoves;
-    ChessPiece* ActivePiece = nullptr;
-    PieceColor PlayerColor = PieceColor::White;
+    ChessPiece* ActivePiece;
+    PieceColor PlayerColor;
     ChessPiece* WhiteKing;
     ChessPiece* BlackKing;
-    unsigned long long int turn = 1;
-    MoveList moves;
+    QGraphicsScene* scene;
+    MoveManager* movemanager;
 
     void setPieceInBoardPos(ChessPiece* Piece, BoardPosition BoardPos);
-    void RemoveChessPiece(ChessPiece *PieceToRemove);
+    virtual void RemoveChessPiece(ChessPiece *PieceToRemove);
+    virtual void AddChessPiece(ChessPiece* PieceToAdd, const BoardPosition& boardposition);
     ChessBox* getBoxAtBoardPosition(BoardPosition pos);
-    ChessPiece* getPieceAtBoardPosition(BoardPosition pos);
     bool isValidMove(BoardPosition move) const;
     bool PlayerHaveMove();
     void HandleKingCastling();
     void ValidateIsKingCheckAfterMoves(std::vector<BoardPosition>& PossibleMovesCheck, ChessPiece* PieceToCheck);
-    void ResetTheBoard();
 
     friend class ChessBoardCopy;
+    friend class MoveGenerator;
     friend struct ChessBoardView;
-    friend struct MoveList;
+    friend class MovesStack;
+    friend class SideBarMenu;
 };
 
 #endif // CHESSBOARD_H
